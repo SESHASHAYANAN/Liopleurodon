@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+httpx
+supabase
+python-dotenv
+apscheduler
+groq
+google-generativeai
+openai
+python-multipart
+beautifulsoup4

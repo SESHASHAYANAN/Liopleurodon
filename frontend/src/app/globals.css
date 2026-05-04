@@ -1,0 +1,261 @@
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-surface: #12121a;
+  --bg-elevated: #1a1a28;
+  --border-color: #1e1e2e;
+  --border-hover: #2e2e42;
+  --accent-primary: #7c3aed;
+  --accent-primary-hover: #6d28d9;
+  --accent-secondary: #06b6d4;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+  --gradient-surface: linear-gradient(180deg, #12121a 0%, #0a0a0f 100%);
+  --shadow-glow: 0 0 40px rgba(124, 58, 237, 0.15);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar ───────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* ─── Selection ───────────────────────────────────── */
+::selection {
+  background: rgba(124, 58, 237, 0.3);
+  color: #fff;
+}
+
+/* ─── Skeleton Animation ──────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* ─── Glow Pulse ──────────────────────────────────── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.1); }
+  50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.25); }
+}
+
+/* ─── Float Animation ─────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+/* ─── Cards ───────────────────────────────────────── */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+/* ─── Badge ───────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.badge-primary { background: rgba(124, 58, 237, 0.15); color: #a78bfa; }
+.badge-secondary { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+.badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.badge-error { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-stealth { background: rgba(255, 255, 255, 0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+
+/* ─── Buttons ─────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--accent-primary);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--accent-primary-hover);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+}
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+.btn-secondary:hover {
+  border-color: var(--accent-primary);
+  background: rgba(124, 58, 237, 0.1);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+/* ─── Input ───────────────────────────────────────── */
+.input {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ─── Detail Panel Slide ──────────────────────────── */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slide-panel {
+  animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-overlay {
+  animation: fade-in 0.2s ease;
+}
+
+/* ─── Responsive Grid ─────────────────────────────── */
+.job-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .job-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Layout ──────────────────────────────────────── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
+  min-height: calc(100vh - 72px);
+}
+
+@media (max-width: 1280px) {
+  .main-layout {
+    grid-template-columns: 260px 1fr;
+  }
+  .main-layout > :last-child:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+}
+
+/* ─── Tooltip ─────────────────────────────────────── */
+.tooltip {
+  position: relative;
+}
+.tooltip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.tooltip:hover::after { opacity: 1; }
