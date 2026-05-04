@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, SlidersHorizontal, X, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -13,6 +13,11 @@ export default function Navbar({ onToggleFilters, showFilters }) {
   const [searchValue, setSearchValue] = useState(filters.q || '');
   const [showAuth, setShowAuth] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Sync search input if filter is updated externally (e.g., from Trending Sidebar)
+  useEffect(() => {
+    setSearchValue(filters.q || '');
+  }, [filters.q]);
 
   const handleSearch = (e) => {
     e.preventDefault();

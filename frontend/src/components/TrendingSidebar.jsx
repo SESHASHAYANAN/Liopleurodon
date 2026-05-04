@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Building2, Lock, Globe, Zap } from 'lucide-react';
 import { getJobStats } from '@/lib/api';
+import { useFilters } from '@/context/FilterContext';
 
 export default function TrendingSidebar() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { updateFilter } = useFilters();
 
   useEffect(() => {
     getJobStats()
@@ -76,6 +78,7 @@ export default function TrendingSidebar() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {trendingCompanies.map((company, i) => (
             <motion.div key={company.name}
+              onClick={() => updateFilter('q', company.name)}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}

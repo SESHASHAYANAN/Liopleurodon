@@ -33,6 +33,8 @@ export default function JobDetailPanel({ job, onClose }) {
 
   if (!job) return null;
 
+  const companyName = job.company_name || 'Unknown Company';
+
   return (
     <AnimatePresence>
       <motion.div className="fade-overlay" onClick={onClose}
@@ -54,12 +56,12 @@ export default function JobDetailPanel({ job, onClose }) {
               <img src={job.company_logo_url} alt="" style={{ width: 48, height: 48, borderRadius: 10, background: '#fff', padding: 4, objectFit: 'contain' }} />
             ) : (
               <div style={{ width: 48, height: 48, borderRadius: 10, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                {getInitials(job.company_name)}
+                {getInitials(companyName)}
               </div>
             )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{job.company_name}</span>
+                <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{companyName}</span>
                 {job.vc_backer && <span className="badge badge-primary" style={{ fontSize: 10 }}>{job.vc_backer}</span>}
                 {job.is_stealth && <span className="badge badge-stealth" style={{ fontSize: 10 }}>🔒 Stealth</span>}
               </div>
@@ -190,7 +192,7 @@ export default function JobDetailPanel({ job, onClose }) {
                       border: '1px solid var(--border-color)', cursor: 'pointer',
                     }}>
                       <div style={{ fontSize: 14, fontWeight: 600 }}>{sj.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sj.company_name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sj.company_name || 'Unknown Company'}</div>
                     </div>
                   ))}
                 </div>

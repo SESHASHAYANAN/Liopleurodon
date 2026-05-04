@@ -33,6 +33,7 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
 
   const techTags = (job.tech_stack || []).slice(0, 5);
   const remainingTech = (job.tech_stack || []).length - 5;
+  const companyName = job.company_name || 'Unknown Company';
 
   return (
     <motion.div
@@ -47,7 +48,7 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
       <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
         {/* Company Logo */}
         {job.company_logo_url ? (
-          <img src={job.company_logo_url} alt={job.company_name}
+          <img src={job.company_logo_url} alt={companyName}
             style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'contain', background: '#fff', padding: 4, flexShrink: 0 }}
             onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
           />
@@ -59,13 +60,13 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
             alignItems: 'center', justifyContent: 'center',
             fontSize: 16, fontWeight: 700, color: '#fff',
           }}>
-            {getInitials(job.company_name)}
+            {getInitials(companyName)}
           </div>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}>
-              {job.company_name}
+              {companyName}
             </span>
             {job.vc_backer && (
               <span className="badge badge-primary" style={{ fontSize: 10, padding: '2px 8px' }}>
