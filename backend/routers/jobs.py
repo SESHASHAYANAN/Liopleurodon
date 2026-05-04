@@ -103,6 +103,8 @@ async def get_job_stats():
         vc = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("company_type", "vc_backed").execute()
         stealth = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("is_stealth", True).execute()
         big_tech = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("company_type", "big_tech").execute()
+        visa = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("visa_sponsorship", True).execute()
+        relo = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("relocation_support", True).execute()
 
         return {
             "total_jobs": total.count or 0,
@@ -110,6 +112,8 @@ async def get_job_stats():
             "vc_backed_jobs": vc.count or 0,
             "stealth_jobs": stealth.count or 0,
             "big_tech_jobs": big_tech.count or 0,
+            "visa_jobs": visa.count or 0,
+            "relo_jobs": relo.count or 0,
         }
     except Exception as e:
         return {"total_jobs": 0, "error": str(e)}

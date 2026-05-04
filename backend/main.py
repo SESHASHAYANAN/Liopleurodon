@@ -18,13 +18,12 @@ scheduler = AsyncIOScheduler()
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle."""
     # Start the APScheduler
-    from services.scheduler import scrape_all_sources
+    from services.scheduler import run_periodic_scrapes
     scheduler.add_job(
-        scrape_all_sources,
+        run_periodic_scrapes,
         "interval",
         hours=2,
         id="scrape_all",
-        kwargs={"query": "software engineer"},
     )
     scheduler.start()
     print("[Liopleurodon] Backend started! Scraper scheduled every 2 hours.")

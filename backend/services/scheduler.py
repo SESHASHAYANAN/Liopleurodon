@@ -11,7 +11,7 @@ from services.normalizer import (
     normalize_wellfound, normalize_linkedin, add_dedup_hash,
 )
 from services.deduplication import merge_job_data
-from services.vc_tagger import tag_job_with_vc_info
+from services.vc_tagger import tag_job_with_vc_info, tag_job_perks
 from scrapers.jsearch import JSearchScraper
 from scrapers.serpapi import SerpApiScraper
 from scrapers.adzuna import AdzunaScraper
@@ -41,6 +41,8 @@ SCRAPERS = [
 # Search queries to rotate through
 SEARCH_QUERIES = [
     "software engineer",
+    "software engineer visa sponsorship",
+    "software engineer relocation",
     "frontend developer",
     "backend developer",
     "full stack developer",
@@ -50,6 +52,14 @@ SEARCH_QUERIES = [
     "product designer",
     "product manager",
     "mobile developer",
+]
+
+LOCATIONS = [
+    "",
+    "India",
+    "United States",
+    "Europe",
+    "Remote"
 ]
 
 last_scrape_status = {
@@ -74,6 +84,7 @@ async def scrape_single_source(scraper, normalizer, query, location=""):
                 job = normalizer(raw)
                 job = add_dedup_hash(job)
                 job = tag_job_with_vc_info(job)
+                job = tag_job_perks(job)
                 normalized.append(job)
             except Exception as e:
                 print(f"Normalization error in {scraper.get_source_name()}: {e}")
@@ -193,3 +204,19 @@ def _clean_for_db(job: dict) -> dict:
 
 def get_scrape_status() -> dict:
     return last_scrape_status
+
+
+async def run_periodic_scrapes():
+    """Run periodic scrapes cycling through multiple combinations."""
+    import random
+    
+    # Pick 2 random queries and 2 random locations to keep the database fresh
+    # and diverse across regions including India, and visa/relocation queries.
+    queries = random.sample(SEARCH_QUERIES, 2)
+    locations = random.sample(LOCATIONS, 2)
+    
+    for q in queries:
+        for loc in locations:
+            print(f"[Scheduler] Scraping for query: '{q}', location: '{loc}'")
+            await scrape_all_sources(query=q, location=loc)
+

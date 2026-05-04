@@ -24,6 +24,8 @@ export default function TrendingSidebar() {
     { icon: <TrendingUp size={16} />, label: 'VC-Backed', value: stats?.vc_backed_jobs || 0, color: 'var(--accent-secondary)' },
     { icon: <Lock size={16} />, label: 'Stealth', value: stats?.stealth_jobs || 0, color: 'var(--text-muted)' },
     { icon: <Building2 size={16} />, label: 'Big Tech', value: stats?.big_tech_jobs || 0, color: 'var(--warning)' },
+    { icon: <span style={{fontSize: 14}}>✅</span>, label: 'Visa Sponsor', value: stats?.visa_jobs || 0, color: 'var(--success)' },
+    { icon: <span style={{fontSize: 14}}>🏠</span>, label: 'Relocation', value: stats?.relo_jobs || 0, color: 'var(--accent-primary)' },
   ];
 
   const trendingCompanies = [

@@ -85,3 +85,19 @@ def tag_job_with_vc_info(job: dict) -> dict:
     if not job.get("is_stealth"):
         job["is_stealth"] = info["is_stealth"]
     return job
+
+def tag_job_perks(job: dict) -> dict:
+    title = str(job.get("title", "")).lower()
+    description = str(job.get("description", "")).lower()
+    text = title + " " + description
+    
+    if not job.get("visa_sponsorship"):
+        if any(p in text for p in ["visa sponsor", "sponsorship available", "sponsor visa", "h1b", "h-1b", "visa support"]):
+            job["visa_sponsorship"] = True
+            
+    if not job.get("relocation_support"):
+        if any(p in text for p in ["relocation support", "relocation assistance", "relocation package", "offer relocation", "relocation provided", "willing to relocate"]):
+            job["relocation_support"] = True
+            
+    return job
+
