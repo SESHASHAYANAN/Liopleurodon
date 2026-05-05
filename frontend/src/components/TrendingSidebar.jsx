@@ -12,10 +12,31 @@ export default function TrendingSidebar() {
   const { updateFilter } = useFilters();
 
   useEffect(() => {
-    getJobStats()
-      .then(setStats)
-      .catch(() => setStats(null))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    let retryTimer;
+
+    const fetchStats = (attempt = 0) => {
+      getJobStats()
+        .then(data => {
+          if (!cancelled) {
+            setStats(data);
+            setLoading(false);
+          }
+        })
+        .catch(() => {
+          if (!cancelled && attempt < 4) {
+            // Retry with escalating delays: 2s, 4s, 8s, 15s
+            const delay = [2000, 4000, 8000, 15000][attempt] || 15000;
+            retryTimer = setTimeout(() => fetchStats(attempt + 1), delay);
+          } else if (!cancelled) {
+            setStats(null);
+            setLoading(false);
+          }
+        });
+    };
+
+    fetchStats();
+    return () => { cancelled = true; clearTimeout(retryTimer); };
   }, []);
 
   const statItems = [

@@ -42,8 +42,43 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
       transition={{ delay: index * 0.05, duration: 0.3 }}
       className="card"
       onClick={() => onViewDetails?.(job)}
-      style={{ padding: 20, cursor: 'pointer', position: 'relative' }}
+      style={{
+        padding: 20, cursor: 'pointer', position: 'relative',
+        ...(job._is_featured ? {
+          borderColor: 'rgba(245, 158, 11, 0.5)',
+          boxShadow: '0 0 20px rgba(245, 158, 11, 0.15)',
+        } : {}),
+        ...(job._is_new ? {
+          borderColor: 'rgba(16, 185, 129, 0.5)',
+        } : {}),
+      }}
     >
+      {/* Featured / New Badges */}
+      {(job._is_featured || job._is_new || job.is_featured) && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+          {(job._is_featured || job.is_featured) && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '2px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700,
+              background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+            }}>
+              ⭐ Featured
+            </span>
+          )}
+          {job._is_new && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '2px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700,
+              background: 'rgba(16, 185, 129, 0.15)', color: '#34d399',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              animation: 'pulse 2s ease-in-out infinite',
+            }}>
+              🆕 New
+            </span>
+          )}
+        </div>
+      )}
       {/* Header Row */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
         {/* Company Logo */}

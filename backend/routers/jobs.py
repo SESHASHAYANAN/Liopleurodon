@@ -1,6 +1,7 @@
 """
 Liopleurodon — Jobs Router
 Search, filter, and retrieve job listings.
+Featured (⭐) jobs appear first, then newest scraped jobs on top.
 """
 
 from fastapi import APIRouter, Query
@@ -32,9 +33,53 @@ async def search_jobs(
     sort_by: str = "posted_date",
     sort_order: str = "desc",
 ):
-    """Search and filter jobs with pagination."""
+    """Search and filter jobs with pagination.
+    Featured jobs sort to top, then by posted_date desc (newest first).
+    """
     db = get_supabase_admin()
+
+    # ─── Featured Jobs Query ─────────────────────────────────
+    # First, try to get featured jobs (if is_featured column exists)
+    featured_jobs = []
+    try:
+        feat_query = db.table("jobs").select("*").eq("is_active", True).eq("is_featured", True)
+        # Apply same text search filter to featured
+        if q:
+            feat_query = feat_query.or_(f"title.ilike.%{q}%,company_name.ilike.%{q}%,description.ilike.%{q}%")
+        if location:
+            feat_query = feat_query.or_(f"location_city.ilike.%{location}%,location_country.ilike.%{location}%")
+        if remote_type:
+            feat_query = feat_query.eq("remote_type", remote_type)
+        if experience_level:
+            feat_query = feat_query.eq("experience_level", experience_level)
+        if job_type:
+            feat_query = feat_query.eq("job_type", job_type)
+        if visa_sponsorship is not None:
+            feat_query = feat_query.eq("visa_sponsorship", visa_sponsorship)
+        if relocation_support is not None:
+            feat_query = feat_query.eq("relocation_support", relocation_support)
+        if company_type:
+            feat_query = feat_query.eq("company_type", company_type)
+
+        feat_query = feat_query.order("created_at", desc=True).limit(50)
+        feat_result = feat_query.execute()
+        featured_jobs = feat_result.data or []
+
+        # Mark each featured job so frontend knows
+        for fj in featured_jobs:
+            fj["_is_featured"] = True
+    except Exception:
+        # is_featured column may not exist — gracefully skip
+        featured_jobs = []
+
+    # ─── Regular Jobs Query ──────────────────────────────────
     query = db.table("jobs").select("*", count="exact").eq("is_active", True)
+
+    # Exclude featured jobs from regular query to avoid duplicates
+    try:
+        query = query.neq("is_featured", True)
+    except Exception:
+        pass
 
     # Text search
     if q:
@@ -73,7 +118,7 @@ async def search_jobs(
         cutoff = (now - delta).isoformat()
         query = query.gte("posted_date", cutoff)
 
-    # Sorting
+    # Sorting — always newest first for regular jobs
     desc = sort_order == "desc"
     query = query.order(sort_by, desc=desc)
 
@@ -82,13 +127,39 @@ async def search_jobs(
     query = query.range(offset, offset + per_page - 1)
 
     result = query.execute()
+    regular_jobs = result.data or []
+
+    # ─── Combine: Featured first (page 1 only), then regular ─
+    if page == 1:
+        # Deduplicate: remove any regular jobs that are also in featured
+        featured_ids = {fj["id"] for fj in featured_jobs}
+        regular_jobs = [j for j in regular_jobs if j["id"] not in featured_ids]
+
+        # Mark new scraped jobs (scraped within last 10 minutes)
+        ten_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+        for job in regular_jobs:
+            created = job.get("created_at", "")
+            if created and created > ten_min_ago:
+                job["_is_new"] = True
+
+        combined = featured_jobs + regular_jobs
+    else:
+        # Mark new scraped jobs on subsequent pages too
+        ten_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+        for job in regular_jobs:
+            created = job.get("created_at", "")
+            if created and created > ten_min_ago:
+                job["_is_new"] = True
+        combined = regular_jobs
+
+    total_count = (result.count or 0) + len(featured_jobs)
 
     return {
-        "jobs": result.data or [],
-        "total": result.count or 0,
+        "jobs": combined,
+        "total": total_count,
         "page": page,
         "per_page": per_page,
-        "total_pages": ((result.count or 0) + per_page - 1) // per_page,
+        "total_pages": (total_count + per_page - 1) // per_page,
     }
 
 
@@ -106,6 +177,14 @@ async def get_job_stats():
         visa = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("visa_sponsorship", True).execute()
         relo = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("relocation_support", True).execute()
 
+        # Count featured jobs
+        featured_count = 0
+        try:
+            feat = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("is_featured", True).execute()
+            featured_count = feat.count or 0
+        except Exception:
+            pass
+
         return {
             "total_jobs": total.count or 0,
             "remote_jobs": remote.count or 0,
@@ -114,6 +193,7 @@ async def get_job_stats():
             "big_tech_jobs": big_tech.count or 0,
             "visa_jobs": visa.count or 0,
             "relo_jobs": relo.count or 0,
+            "featured_jobs": featured_count,
         }
     except Exception as e:
         return {"total_jobs": 0, "error": str(e)}

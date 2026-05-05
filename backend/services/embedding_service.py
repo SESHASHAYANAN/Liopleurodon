@@ -69,7 +69,7 @@ async def match_resume_to_jobs(resume_text: str, limit: int = 20) -> list[dict]:
     try:
         result = db.rpc("match_jobs", {
             "query_embedding": embedding,
-            "match_threshold": 0.5,
+            "match_threshold": 0.1,  # Lowered to ensure even non-tech resumes get some matches
             "match_count": limit,
             "exclude_id": None,
         }).execute()

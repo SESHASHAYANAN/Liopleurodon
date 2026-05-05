@@ -11,3 +11,5 @@ google-generativeai
 openai
 python-multipart
 beautifulsoup4
+PyPDF2
+lxml
