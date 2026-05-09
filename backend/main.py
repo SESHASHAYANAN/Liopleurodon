@@ -25,12 +25,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[Liopleurodon] Seed data injection error (non-fatal): {e}")
 
-    # ─── API-based scrapers (every 2 hours) ────────────────────
+    # ─── Cleanup expired jobs on startup ───────────────────────
+    try:
+        from scrapers.web_scraper import mark_stale_jobs
+        await mark_stale_jobs()
+        print("[Liopleurodon] Expired job cleanup completed on startup.")
+    except Exception as e:
+        print(f"[Liopleurodon] Startup cleanup error (non-fatal): {e}")
+
+    # ─── API-based scrapers (every 1 hour for faster growth to 2500+) ──
     from services.scheduler import run_periodic_scrapes
     scheduler.add_job(
         run_periodic_scrapes,
         "interval",
-        hours=2,
+        hours=1,
         id="scrape_all",
     )
 
@@ -43,7 +51,7 @@ async def lifespan(app: FastAPI):
         id="web_scrape",
     )
 
-    # ─── Stale job cleanup (every 10 minutes) ──────────────────
+    # ─── Stale + expired job cleanup (every 10 minutes) ────────
     scheduler.add_job(
         mark_stale_jobs,
         "interval",
@@ -52,7 +60,7 @@ async def lifespan(app: FastAPI):
     )
 
     scheduler.start()
-    print("[Liopleurodon] Backend started! API scrapers: 2h, Web scrapers: 10min.")
+    print("[Liopleurodon] Backend started! API scrapers: 1h, Web scrapers: 10min.")
     yield
     scheduler.shutdown()
     print("[Liopleurodon] Backend shutting down.")

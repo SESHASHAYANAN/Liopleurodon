@@ -117,7 +117,7 @@ class JobSearchParams(BaseModel):
     posted_within: Optional[str] = None  # "24h", "week", "month"
     page: int = 1
     per_page: int = 20
-    sort_by: str = "posted_date"
+    sort_by: str = "created_at"
     sort_order: str = "desc"
 
 

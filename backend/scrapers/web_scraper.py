@@ -448,6 +448,420 @@ async def scrape_arbeitnow(client: httpx.AsyncClient) -> list:
     return jobs
 
 
+# ─── Indian Startup + AI Job Scrapers ───────────────────────────
+
+async def scrape_remotive(client: httpx.AsyncClient) -> list:
+    """Scrape remotive.com — high-quality remote tech jobs with AI/ML focus."""
+    jobs = []
+    try:
+        resp = await client.get(
+            "https://remotive.com/api/remote-jobs",
+            params={"category": "software-dev", "limit": 50},
+            headers=HEADERS,
+            timeout=30,
+        )
+        data = resp.json()
+        for item in (data.get("jobs", []) or [])[:50]:
+            title = item.get("title", "")
+            company = item.get("company_name", "")
+            location = item.get("candidate_required_location", "Remote")
+            url = item.get("url", "https://remotive.com")
+            desc = item.get("description", "")
+            tags = item.get("tags", [])
+            pub_date = item.get("publication_date", "")
+
+            if title and company:
+                job = _make_job(
+                    title=title,
+                    company=company,
+                    location=location,
+                    apply_url=url,
+                    description=desc,
+                    remote_hint="remote",
+                    source="Remotive",
+                    posted_date=pub_date if pub_date else None,
+                )
+                if tags:
+                    job["tech_stack"] = tags[:10]
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] remotive error: {e}")
+    return jobs
+
+
+async def scrape_remotive_ai(client: httpx.AsyncClient) -> list:
+    """Scrape remotive.com AI/ML specific remote jobs."""
+    jobs = []
+    try:
+        resp = await client.get(
+            "https://remotive.com/api/remote-jobs",
+            params={"category": "data", "limit": 50},
+            headers=HEADERS,
+            timeout=30,
+        )
+        data = resp.json()
+        for item in (data.get("jobs", []) or [])[:50]:
+            title = item.get("title", "")
+            company = item.get("company_name", "")
+            location = item.get("candidate_required_location", "Remote")
+            url = item.get("url", "https://remotive.com")
+            desc = item.get("description", "")
+            tags = item.get("tags", [])
+            pub_date = item.get("publication_date", "")
+
+            if title and company:
+                job = _make_job(
+                    title=title,
+                    company=company,
+                    location=location,
+                    apply_url=url,
+                    description=desc,
+                    remote_hint="remote",
+                    source="Remotive-AI",
+                    posted_date=pub_date if pub_date else None,
+                )
+                if tags:
+                    job["tech_stack"] = tags[:10]
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] remotive-ai error: {e}")
+    return jobs
+
+
+async def scrape_hasjob(client: httpx.AsyncClient) -> list:
+    """Scrape hasjob.co — Indian tech job board."""
+    jobs = []
+    try:
+        html = await _fetch_page(client, "https://hasjob.co")
+        if not html:
+            return []
+        soup = BeautifulSoup(html, "html.parser")
+        listings = soup.select(".sticky-outer-wrapper .listjob, .stickycontainer .listjob, #main .listjob, .col-auto .listjob, a.listheader, div[data-headline]")
+        if not listings:
+            listings = soup.select("a[href*='/view/']")
+
+        seen = set()
+        for item in listings[:40]:
+            link = item if item.name == "a" else item.select_one("a[href]")
+            if not link:
+                continue
+            href = link.get("href", "")
+            if href in seen or not href:
+                continue
+            seen.add(href)
+
+            title_el = item.select_one("span.headline, .headline, h2, h3")
+            title = title_el.get_text(strip=True) if title_el else link.get_text(strip=True)
+            company_el = item.select_one("span.companyname, .company, .org")
+            company = company_el.get_text(strip=True) if company_el else ""
+            loc_el = item.select_one("span.location, .location")
+            location = loc_el.get_text(strip=True) if loc_el else "India"
+
+            full_url = f"https://hasjob.co{href}" if href.startswith("/") else href
+            if title and len(title) > 3:
+                jobs.append(_make_job(
+                    title=title,
+                    company=company or "Indian Company",
+                    location=location,
+                    apply_url=full_url,
+                    source="HasJob",
+                ))
+    except Exception as e:
+        print(f"[WebScraper] hasjob error: {e}")
+    return jobs
+
+
+async def scrape_jobicy(client: httpx.AsyncClient) -> list:
+    """Scrape jobicy.com — remote tech jobs with good Indian coverage."""
+    jobs = []
+    try:
+        resp = await client.get(
+            "https://jobicy.com/api/v2/remote-jobs",
+            params={"count": 50, "tag": "software-dev"},
+            headers=HEADERS,
+            timeout=30,
+        )
+        data = resp.json()
+        for item in (data.get("jobs", []) or [])[:50]:
+            title = item.get("jobTitle", "")
+            company = item.get("companyName", "")
+            location = item.get("jobGeo", "Remote")
+            url = item.get("url", "https://jobicy.com")
+            desc = item.get("jobExcerpt", "")
+            pub_date = item.get("pubDate", "")
+
+            if title and company:
+                job = _make_job(
+                    title=title,
+                    company=company,
+                    location=location,
+                    apply_url=url,
+                    description=desc,
+                    remote_hint="remote",
+                    source="Jobicy",
+                    posted_date=pub_date if pub_date else None,
+                )
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] jobicy error: {e}")
+    return jobs
+
+
+async def scrape_himalayas(client: httpx.AsyncClient) -> list:
+    """Scrape himalayas.app — remote tech jobs API."""
+    jobs = []
+    try:
+        resp = await client.get(
+            "https://himalayas.app/jobs/api",
+            params={"limit": 50},
+            headers=HEADERS,
+            timeout=30,
+        )
+        data = resp.json()
+        for item in (data.get("jobs", []) or [])[:50]:
+            title = item.get("title", "")
+            company = item.get("companyName", item.get("company_name", ""))
+            location = item.get("location", "Remote")
+            url = item.get("applicationLink", item.get("url", "https://himalayas.app"))
+            desc = item.get("description", "")
+            tags = item.get("categories", [])
+
+            if title and company:
+                job = _make_job(
+                    title=title,
+                    company=company,
+                    location=location,
+                    apply_url=url,
+                    description=desc,
+                    remote_hint="remote",
+                    source="Himalayas",
+                )
+                if tags:
+                    job["tech_stack"] = tags[:10]
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] himalayas error: {e}")
+    return jobs
+
+
+async def scrape_remoteok(client: httpx.AsyncClient) -> list:
+    """Scrape remoteok.com — large remote job board with AI and dev roles."""
+    jobs = []
+    try:
+        resp = await client.get(
+            "https://remoteok.com/api",
+            headers={**HEADERS, "Accept": "application/json"},
+            timeout=30,
+        )
+        data = resp.json()
+        # First item is metadata, skip it
+        items = data[1:] if len(data) > 1 else []
+        for item in items[:60]:
+            title = item.get("position", "")
+            company = item.get("company", "")
+            location = item.get("location", "Remote")
+            url = item.get("url", item.get("apply_url", "https://remoteok.com"))
+            desc = item.get("description", "")
+            tags = item.get("tags", [])
+            pub_date = item.get("date", "")
+
+            if title and company:
+                job = _make_job(
+                    title=title,
+                    company=company,
+                    location=location or "Remote",
+                    apply_url=url,
+                    description=desc,
+                    remote_hint="remote",
+                    source="RemoteOK",
+                    posted_date=pub_date if pub_date else None,
+                )
+                if tags:
+                    job["tech_stack"] = [t for t in tags if isinstance(t, str)][:10]
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] remoteok error: {e}")
+    return jobs
+
+
+async def scrape_ai_jobs_net(client: httpx.AsyncClient) -> list:
+    """Scrape ai-jobs.net — dedicated AI/ML job board."""
+    jobs = []
+    try:
+        html = await _fetch_page(client, "https://ai-jobs.net/")
+        if not html:
+            return []
+        soup = BeautifulSoup(html, "html.parser")
+        cards = soup.select("article, .job-listing, tr[class], div.job-card, a[href*='/job/']")
+        seen = set()
+        for card in cards[:40]:
+            link = card if card.name == "a" else card.select_one("a[href]")
+            if not link:
+                continue
+            href = link.get("href", "")
+            if href in seen or not href:
+                continue
+            seen.add(href)
+
+            title_el = card.select_one("h2, h3, h4, .title, td:first-child")
+            title = title_el.get_text(strip=True) if title_el else link.get_text(strip=True)
+            company_el = card.select_one(".company, .org, td:nth-child(2)")
+            company = company_el.get_text(strip=True) if company_el else ""
+            loc_el = card.select_one(".location, .loc, td:nth-child(3)")
+            location = loc_el.get_text(strip=True) if loc_el else "Remote"
+
+            full_url = f"https://ai-jobs.net{href}" if href.startswith("/") else href
+            if title and len(title) > 3:
+                job = _make_job(
+                    title=title,
+                    company=company or "AI Company",
+                    location=location,
+                    apply_url=full_url,
+                    source="AI-Jobs",
+                )
+                job["tech_stack"] = ["AI", "Machine Learning"]
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] ai-jobs.net error: {e}")
+    return jobs
+
+
+async def scrape_karkidi(client: httpx.AsyncClient) -> list:
+    """Scrape karkidi.com — Indian AI/ML/Data Science focused job board."""
+    jobs = []
+    try:
+        html = await _fetch_page(client, "https://karkidi.com/jobs/search?q=AI+machine+learning&loc=india")
+        if not html:
+            return []
+        soup = BeautifulSoup(html, "html.parser")
+        cards = soup.select("div.ads-details, div.job-listing, article, .card, a[href*='/job/']")
+        seen = set()
+        for card in cards[:40]:
+            link = card if card.name == "a" else card.select_one("a[href]")
+            if not link:
+                continue
+            href = link.get("href", "")
+            if href in seen or not href:
+                continue
+            seen.add(href)
+
+            title_el = card.select_one("h2, h3, h4, .title, .job-title")
+            title = title_el.get_text(strip=True) if title_el else link.get_text(strip=True)
+            company_el = card.select_one(".company, .org, .company-name")
+            company = company_el.get_text(strip=True) if company_el else ""
+            loc_el = card.select_one(".location, .loc, .job-location")
+            location = loc_el.get_text(strip=True) if loc_el else "India"
+
+            full_url = f"https://karkidi.com{href}" if href.startswith("/") else href
+            if title and len(title) > 3:
+                job = _make_job(
+                    title=title,
+                    company=company or "Indian AI Company",
+                    location=location,
+                    apply_url=full_url,
+                    source="Karkidi",
+                )
+                job["tech_stack"] = ["AI", "Machine Learning", "Data Science"]
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] karkidi error: {e}")
+    return jobs
+
+
+async def scrape_instahyre(client: httpx.AsyncClient) -> list:
+    """Scrape instahyre.com — Indian startup job platform."""
+    jobs = []
+    try:
+        html = await _fetch_page(client, "https://www.instahyre.com/jobs/")
+        if not html:
+            return []
+        soup = BeautifulSoup(html, "html.parser")
+        cards = soup.select("div.job-card, div.listing, article, .opportunity, a[href*='/job/']")
+        if not cards:
+            cards = soup.select("a[href*='/job/'], div[class*='job'], div[class*='listing']")
+        seen = set()
+        for card in cards[:40]:
+            link = card if card.name == "a" else card.select_one("a[href]")
+            if not link:
+                continue
+            href = link.get("href", "")
+            if href in seen or not href:
+                continue
+            seen.add(href)
+
+            title_el = card.select_one("h2, h3, h4, .title, .job-title, .designation")
+            title = title_el.get_text(strip=True) if title_el else link.get_text(strip=True)
+            company_el = card.select_one(".company, .org, .company-name")
+            company = company_el.get_text(strip=True) if company_el else ""
+            loc_el = card.select_one(".location, .loc, .city")
+            location = loc_el.get_text(strip=True) if loc_el else "India"
+
+            full_url = f"https://www.instahyre.com{href}" if href.startswith("/") else href
+            if title and len(title) > 3:
+                job = _make_job(
+                    title=title,
+                    company=company or "Indian Startup",
+                    location=location,
+                    apply_url=full_url,
+                    source="Instahyre",
+                )
+                job["company_type"] = "startup"
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] instahyre error: {e}")
+    return jobs
+
+
+async def scrape_adzuna_india(client: httpx.AsyncClient) -> list:
+    """Scrape Adzuna India AI/tech jobs via their free API."""
+    jobs = []
+    try:
+        # Adzuna has a free public search endpoint
+        resp = await client.get(
+            "https://api.adzuna.com/v1/api/jobs/in/search/1",
+            params={
+                "app_id": "4fbc6de3",
+                "app_key": "09ba5e03b9a6bc6fe505e47c95b527fa",
+                "what": "AI machine learning software engineer",
+                "results_per_page": 50,
+                "content-type": "application/json",
+            },
+            headers=HEADERS,
+            timeout=30,
+        )
+        data = resp.json()
+        for item in (data.get("results", []) or [])[:50]:
+            title = item.get("title", "")
+            company = item.get("company", {}).get("display_name", "")
+            location = item.get("location", {}).get("display_name", "India")
+            url = item.get("redirect_url", item.get("adref", ""))
+            desc = item.get("description", "")
+            salary_min = item.get("salary_min")
+            salary_max = item.get("salary_max")
+            created = item.get("created", "")
+
+            if title and company:
+                job = _make_job(
+                    title=title,
+                    company=company,
+                    location=location,
+                    apply_url=url,
+                    description=desc,
+                    source="Adzuna-IN",
+                    posted_date=created if created else None,
+                )
+                if salary_min:
+                    job["salary_min"] = salary_min
+                    job["salary_currency"] = "INR"
+                if salary_max:
+                    job["salary_max"] = salary_max
+                    job["salary_currency"] = "INR"
+                jobs.append(job)
+    except Exception as e:
+        print(f"[WebScraper] adzuna-india error: {e}")
+    return jobs
+
+
 # ─── Main Scrape Orchestrator ───────────────────────────────────
 
 async def run_web_scrape() -> dict:
@@ -456,6 +870,7 @@ async def run_web_scrape() -> dict:
 
     async with httpx.AsyncClient(timeout=30) as client:
         tasks = [
+            # ─── Original sources ───
             scrape_workatastartup(client),
             scrape_yc_jobs(client),
             scrape_simplify_yc(client),
@@ -465,6 +880,17 @@ async def run_web_scrape() -> dict:
             scrape_web3_career(client, "web3-companies/okx+remote", "Web3-OKX"),
             scrape_migratemate(client),
             scrape_arbeitnow(client),
+            # ─── NEW: AI + Indian Startup sources ───
+            scrape_remotive(client),
+            scrape_remotive_ai(client),
+            scrape_hasjob(client),
+            scrape_jobicy(client),
+            scrape_himalayas(client),
+            scrape_remoteok(client),
+            scrape_ai_jobs_net(client),
+            scrape_karkidi(client),
+            scrape_instahyre(client),
+            scrape_adzuna_india(client),
         ]
 
         # Small delays between requests to be respectful
@@ -532,18 +958,22 @@ async def _store_scraped_jobs(jobs: list) -> tuple:
 
 
 async def mark_stale_jobs():
-    """Mark jobs as inactive if not seen in 3 scrape cycles (30 minutes)."""
+    """Mark jobs as inactive if not seen in 3 scrape cycles (30 minutes).
+    Also deactivates expired jobs (posted_date > 45 days ago) from ALL sources.
+    """
     from database import get_supabase_admin
     from datetime import timedelta
 
     db = get_supabase_admin()
+
+    # ─── 1. Mark web-scraped stale jobs (not seen in 30 min) ────
     try:
         cutoff = (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
-        # Only mark stale jobs from web scraper sources (not API scrapers or seed data)
         web_sources = ["WebScraper", "YC-WATS", "YC-Jobs", "Simplify", "ArcDev",
-                       "Web3-DS", "Web3-Remote", "Web3-OKX", "MigrateMate", "Arbeitnow"]
+                       "Web3-DS", "Web3-Remote", "Web3-OKX", "MigrateMate", "Arbeitnow",
+                       "Remotive", "Remotive-AI", "HasJob", "Jobicy", "Himalayas",
+                       "RemoteOK", "AI-Jobs", "Karkidi", "Instahyre", "Adzuna-IN"]
 
-        # Get jobs from web sources that haven't been seen recently
         for source in web_sources:
             try:
                 stale = (db.table("jobs")
@@ -565,3 +995,29 @@ async def mark_stale_jobs():
                 print(f"[WebScraper] Staleness check error for {source}: {e}")
     except Exception as e:
         print(f"[WebScraper] mark_stale_jobs error: {e}")
+
+    # ─── 2. Deactivate globally expired jobs (posted > 45 days ago) ──
+    try:
+        expiry_cutoff = (datetime.now(timezone.utc) - timedelta(days=45)).isoformat()
+        expired = (db.table("jobs")
+                   .select("id")
+                   .eq("is_active", True)
+                   .lt("posted_date", expiry_cutoff)
+                   .limit(100)
+                   .execute())
+
+        if expired.data:
+            deactivated = 0
+            for job in expired.data:
+                try:
+                    db.table("jobs").update({
+                        "is_active": False,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    }).eq("id", job["id"]).execute()
+                    deactivated += 1
+                except Exception:
+                    pass
+            print(f"[WebScraper] Deactivated {deactivated} expired jobs (posted before {expiry_cutoff[:10]})")
+    except Exception as e:
+        print(f"[WebScraper] Expired job cleanup error: {e}")
+

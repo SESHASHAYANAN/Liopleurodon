@@ -1,7 +1,8 @@
 """
 Liopleurodon — Jobs Router
 Search, filter, and retrieve job listings.
-Featured (⭐) jobs appear first, then newest scraped jobs on top.
+Featured (⭐) jobs appear first, then newest scraped jobs on top (sorted by created_at).
+Expired jobs (posted_date > 45 days ago) are automatically filtered out or pushed to bottom.
 """
 
 from fastapi import APIRouter, Query
@@ -10,6 +11,9 @@ from datetime import datetime, timezone, timedelta
 from database import get_supabase_admin
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+
+# ─── Expiry threshold: jobs older than this are considered expired ──
+EXPIRY_DAYS = 45
 
 
 @router.get("")
@@ -30,19 +34,26 @@ async def search_jobs(
     posted_within: Optional[str] = None,
     page: int = 1,
     per_page: int = 20,
-    sort_by: str = "posted_date",
+    sort_by: str = "created_at",
     sort_order: str = "desc",
 ):
     """Search and filter jobs with pagination.
-    Featured jobs sort to top, then by posted_date desc (newest first).
+    Featured jobs sort to top, then by created_at desc (newest scraped first).
+    Expired jobs (posted > 45 days ago) are excluded from results.
     """
     db = get_supabase_admin()
+    now = datetime.now(timezone.utc)
+
+    # ─── Expiry cutoff: exclude jobs with posted_date older than 45 days ──
+    expiry_cutoff = (now - timedelta(days=EXPIRY_DAYS)).isoformat()
 
     # ─── Featured Jobs Query ─────────────────────────────────
-    # First, try to get featured jobs (if is_featured column exists)
     featured_jobs = []
     try:
-        feat_query = db.table("jobs").select("*").eq("is_active", True).eq("is_featured", True)
+        feat_query = (db.table("jobs").select("*")
+                      .eq("is_active", True)
+                      .eq("is_featured", True)
+                      .gte("posted_date", expiry_cutoff))
         # Apply same text search filter to featured
         if q:
             feat_query = feat_query.or_(f"title.ilike.%{q}%,company_name.ilike.%{q}%,description.ilike.%{q}%")
@@ -81,6 +92,9 @@ async def search_jobs(
     except Exception:
         pass
 
+    # ─── Exclude expired jobs (posted_date > 45 days ago) ────
+    query = query.gte("posted_date", expiry_cutoff)
+
     # Text search
     if q:
         query = query.or_(f"title.ilike.%{q}%,company_name.ilike.%{q}%,description.ilike.%{q}%")
@@ -112,13 +126,12 @@ async def search_jobs(
     if source:
         query = query.contains("source_platforms", [source])
     if posted_within:
-        now = datetime.now(timezone.utc)
         delta_map = {"24h": timedelta(hours=24), "week": timedelta(weeks=1), "month": timedelta(days=30)}
         delta = delta_map.get(posted_within, timedelta(days=30))
         cutoff = (now - delta).isoformat()
         query = query.gte("posted_date", cutoff)
 
-    # Sorting — always newest first for regular jobs
+    # Sorting — newest scraped first by default (created_at desc)
     desc = sort_order == "desc"
     query = query.order(sort_by, desc=desc)
 
@@ -130,13 +143,13 @@ async def search_jobs(
     regular_jobs = result.data or []
 
     # ─── Combine: Featured first (page 1 only), then regular ─
+    ten_min_ago = (now - timedelta(minutes=10)).isoformat()
     if page == 1:
         # Deduplicate: remove any regular jobs that are also in featured
         featured_ids = {fj["id"] for fj in featured_jobs}
         regular_jobs = [j for j in regular_jobs if j["id"] not in featured_ids]
 
         # Mark new scraped jobs (scraped within last 10 minutes)
-        ten_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
         for job in regular_jobs:
             created = job.get("created_at", "")
             if created and created > ten_min_ago:
@@ -145,7 +158,6 @@ async def search_jobs(
         combined = featured_jobs + regular_jobs
     else:
         # Mark new scraped jobs on subsequent pages too
-        ten_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
         for job in regular_jobs:
             created = job.get("created_at", "")
             if created and created > ten_min_ago:
@@ -172,22 +184,23 @@ async def search_jobs(
 
 @router.get("/stats")
 async def get_job_stats():
-    """Get job statistics for the sidebar."""
+    """Get job statistics for the sidebar (excludes expired jobs)."""
     db = get_supabase_admin()
+    expiry_cutoff = (datetime.now(timezone.utc) - timedelta(days=EXPIRY_DAYS)).isoformat()
 
     try:
-        total = db.table("jobs").select("id", count="exact").eq("is_active", True).execute()
-        remote = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("remote_type", "remote").execute()
-        vc = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("company_type", "vc_backed").execute()
-        stealth = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("is_stealth", True).execute()
-        big_tech = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("company_type", "big_tech").execute()
-        visa = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("visa_sponsorship", True).execute()
-        relo = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("relocation_support", True).execute()
+        total = db.table("jobs").select("id", count="exact").eq("is_active", True).gte("posted_date", expiry_cutoff).execute()
+        remote = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("remote_type", "remote").gte("posted_date", expiry_cutoff).execute()
+        vc = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("company_type", "vc_backed").gte("posted_date", expiry_cutoff).execute()
+        stealth = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("is_stealth", True).gte("posted_date", expiry_cutoff).execute()
+        big_tech = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("company_type", "big_tech").gte("posted_date", expiry_cutoff).execute()
+        visa = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("visa_sponsorship", True).gte("posted_date", expiry_cutoff).execute()
+        relo = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("relocation_support", True).gte("posted_date", expiry_cutoff).execute()
 
         # Count featured jobs
         featured_count = 0
         try:
-            feat = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("is_featured", True).execute()
+            feat = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("is_featured", True).gte("posted_date", expiry_cutoff).execute()
             featured_count = feat.count or 0
         except Exception:
             pass
@@ -220,3 +233,43 @@ async def get_similar_jobs(job_id: str, limit: int = 10):
     from services.embedding_service import find_similar_jobs
     similar = await find_similar_jobs(job_id, limit)
     return {"similar_jobs": similar}
+
+
+@router.post("/cleanup-expired")
+async def cleanup_expired_jobs():
+    """Manually deactivate jobs with posted_date older than the expiry threshold.
+    This can be called on demand or scheduled to run periodically.
+    """
+    db = get_supabase_admin()
+    now = datetime.now(timezone.utc)
+    expiry_cutoff = (now - timedelta(days=EXPIRY_DAYS)).isoformat()
+
+    try:
+        # Find expired active jobs
+        expired = (db.table("jobs")
+                   .select("id", count="exact")
+                   .eq("is_active", True)
+                   .lt("posted_date", expiry_cutoff)
+                   .execute())
+
+        expired_count = expired.count or 0
+        if expired_count > 0 and expired.data:
+            # Deactivate them in batches
+            deactivated = 0
+            for job in expired.data:
+                try:
+                    db.table("jobs").update({
+                        "is_active": False,
+                        "updated_at": now.isoformat(),
+                    }).eq("id", job["id"]).execute()
+                    deactivated += 1
+                except Exception:
+                    pass
+
+            print(f"[Jobs] Deactivated {deactivated} expired jobs (posted before {expiry_cutoff[:10]})")
+            return {"deactivated": deactivated, "cutoff_date": expiry_cutoff[:10]}
+
+        return {"deactivated": 0, "message": "No expired jobs found"}
+    except Exception as e:
+        print(f"[Jobs] Cleanup error: {e}")
+        return {"error": str(e), "deactivated": 0}

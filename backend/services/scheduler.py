@@ -52,6 +52,23 @@ SEARCH_QUERIES = [
     "product designer",
     "product manager",
     "mobile developer",
+    "cloud engineer",
+    "data engineer",
+    "python developer",
+    "java developer",
+    "react developer",
+    "site reliability engineer",
+    "security engineer",
+    "QA engineer",
+    "AI engineer",
+    "blockchain developer",
+    "iOS developer",
+    "Android developer",
+    "systems engineer",
+    "platform engineer",
+    "solutions architect",
+    "technical program manager",
+    "engineering manager",
 ]
 
 LOCATIONS = [
@@ -59,7 +76,16 @@ LOCATIONS = [
     "India",
     "United States",
     "Europe",
-    "Remote"
+    "Remote",
+    "United Kingdom",
+    "Canada",
+    "Germany",
+    "Singapore",
+    "Australia",
+    "Bangalore",
+    "San Francisco",
+    "New York",
+    "London",
 ]
 
 last_scrape_status = {
@@ -208,16 +234,17 @@ def get_scrape_status() -> dict:
 
 
 async def run_periodic_scrapes():
-    """Run periodic scrapes cycling through multiple combinations."""
+    """Run periodic scrapes cycling through multiple combinations.
+    Samples 4 queries x 3 locations = up to 12 scrape rounds per cycle
+    to build toward 2,500+ jobs in the database.
+    """
     import random
     
-    # Pick 2 random queries and 2 random locations to keep the database fresh
-    # and diverse across regions including India, and visa/relocation queries.
-    queries = random.sample(SEARCH_QUERIES, 2)
-    locations = random.sample(LOCATIONS, 2)
+    # Pick 4 random queries and 3 random locations for broad coverage
+    queries = random.sample(SEARCH_QUERIES, min(4, len(SEARCH_QUERIES)))
+    locations = random.sample(LOCATIONS, min(3, len(LOCATIONS)))
     
     for q in queries:
         for loc in locations:
             print(f"[Scheduler] Scraping for query: '{q}', location: '{loc}'")
             await scrape_all_sources(query=q, location=loc)
-

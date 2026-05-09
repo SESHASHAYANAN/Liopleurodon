@@ -19,7 +19,7 @@ const defaultFilters = {
   tech_stack: '',
   source: '',
   posted_within: '',
-  sort_by: 'posted_date',
+  sort_by: 'created_at',
   sort_order: 'desc',
 };
 
