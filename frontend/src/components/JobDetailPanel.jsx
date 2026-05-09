@@ -64,6 +64,16 @@ export default function JobDetailPanel({ job, onClose }) {
                 <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{companyName}</span>
                 {job.vc_backer && <span className="badge badge-primary" style={{ fontSize: 10 }}>{job.vc_backer}</span>}
                 {job.is_stealth && <span className="badge badge-stealth" style={{ fontSize: 10 }}>🔒 Stealth</span>}
+                {job.ats_detected && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                    padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600,
+                    background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                  }}>
+                    🏢 {job.ats_detected}
+                  </span>
+                )}
               </div>
               <h2 style={{ fontSize: 20, fontWeight: 700, marginTop: 4 }}>{job.title}</h2>
             </div>
@@ -82,6 +92,9 @@ export default function JobDetailPanel({ job, onClose }) {
               <MetaItem icon={<Building2 size={15} />} label="Experience" value={job.experience_level || 'Not specified'} />
               <MetaItem icon={<Shield size={15} />} label="Visa" value={job.visa_sponsorship ? '✅ Sponsored' : '❌ Not specified'} />
               <MetaItem icon={<Plane size={15} />} label="Relocation" value={job.relocation_support ? '✅ Supported' : '❌ Not specified'} />
+              {job.ats_detected && (
+                <MetaItem icon={<Building2 size={15} />} label="ATS Platform" value={job.ats_detected} />
+              )}
             </div>
 
             {/* Remote Badge */}
@@ -206,8 +219,7 @@ export default function JobDetailPanel({ job, onClose }) {
             background: 'var(--bg-surface)',
           }}>
             <button className="btn btn-primary" onClick={() => {
-              if (job.apply_url) window.open(job.apply_url, '_blank');
-              toast.success('Opening application page...');
+              if (job.apply_url) window.open(job.apply_url, '_blank', 'noopener,noreferrer');
             }}
               style={{ width: '100%', padding: '12px 24px', fontSize: 15, borderRadius: 12 }}>
               <ExternalLink size={18} /> Apply Now

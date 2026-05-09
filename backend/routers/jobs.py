@@ -154,6 +154,13 @@ async def search_jobs(
 
     total_count = (result.count or 0) + len(featured_jobs)
 
+    # ─── ATS Detection ───────────────────────────────────────
+    try:
+        from services.ats_detector import detect_ats_batch
+        combined = await detect_ats_batch(combined)
+    except Exception as e:
+        print(f"[Jobs] ATS detection error (non-fatal): {e}")
+
     return {
         "jobs": combined,
         "total": total_count,

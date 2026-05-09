@@ -80,14 +80,23 @@ export default function DashboardPage() {
     setMatching(true);
     try {
       const data = await matchResumeWithPDF(pdfFile, 20);
-      setMatchedJobs(data.matched_jobs || []);
-      setParsedResume(data.parsed_resume || null);
-      setResumePreview(data.resume_preview || '');
-      setTotalAnalyzed(data.total_jobs_analyzed || 0);
-      toast.success(`Found ${data.matched_jobs?.length || 0} matching jobs out of ${data.total_jobs_analyzed || 0} analyzed!`);
+      if (data.error) {
+        toast.error(data.error);
+        setMatchedJobs([]);
+      } else {
+        setMatchedJobs(data.matched_jobs || []);
+        setParsedResume(data.parsed_resume || null);
+        setResumePreview(data.resume_preview || '');
+        setTotalAnalyzed(data.total_jobs_analyzed || 0);
+        if ((data.matched_jobs || []).length > 0) {
+          toast.success(`Found ${data.matched_jobs.length} matching jobs out of ${data.total_jobs_analyzed || 0} analyzed!`);
+        } else {
+          toast.error('No matching jobs found. Try a different resume or check back later.');
+        }
+      }
     } catch (err) {
-      console.error(err);
-      toast.error('AI matching failed. Please try again.');
+      console.error('AI match error:', err);
+      toast.error('AI matching failed. Make sure the backend server is running.');
     }
     setMatching(false);
   };
@@ -312,53 +321,137 @@ export default function DashboardPage() {
               </motion.div>
             )}
 
-            {/* Match Results */}
-            {matchedJobs.length > 0 && (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 700 }}>
-                    🎯 Top {matchedJobs.length} Matches {totalAnalyzed > 0 && <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-muted)' }}>(from {totalAnalyzed} jobs)</span>}
-                  </h3>
-                </div>
-                <div className="job-grid">
-                  {matchedJobs.map((job, i) => (
-                    <div key={job.id || i} style={{ position: 'relative' }}>
-                      {/* Match Score Overlay */}
-                      {job.match_score > 0 && (
-                        <div style={{
-                          position: 'absolute', top: 12, right: 12, zIndex: 5,
-                          padding: '4px 10px', borderRadius: 10, fontSize: 13, fontWeight: 800,
-                          background: job.match_score >= 80 ? 'rgba(16, 185, 129, 0.2)' : job.match_score >= 60 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                          color: job.match_score >= 80 ? '#34d399' : job.match_score >= 60 ? '#fbbf24' : '#f87171',
-                          border: `1px solid ${job.match_score >= 80 ? 'rgba(16, 185, 129, 0.3)' : job.match_score >= 60 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+            {/* Match Results — Categorized by Tier */}
+            {matchedJobs.length > 0 && (() => {
+              const tiers = {
+                perfect: { emoji: '🏆', label: 'Perfect Match', color: '#34d399', bg: 'rgba(16, 185, 129, 0.08)', border: 'rgba(16, 185, 129, 0.2)', jobs: [] },
+                strong:  { emoji: '🔥', label: 'Strong Match', color: '#fbbf24', bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.2)', jobs: [] },
+                good:    { emoji: '👍', label: 'Good Match', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.08)', border: 'rgba(96, 165, 250, 0.2)', jobs: [] },
+                weak:    { emoji: '💡', label: 'Worth Exploring', color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.08)', border: 'rgba(167, 139, 250, 0.2)', jobs: [] },
+              };
+              matchedJobs.forEach(job => {
+                const tier = job.match_tier || (job.match_score >= 80 ? 'perfect' : job.match_score >= 60 ? 'strong' : job.match_score >= 40 ? 'good' : 'weak');
+                if (tiers[tier]) tiers[tier].jobs.push(job);
+                else tiers.weak.jobs.push(job);
+              });
+
+              return (
+                <div>
+                  {/* Stats Bar */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 800 }}>
+                      🎯 AI Match Results
+                      {totalAnalyzed > 0 && <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 8 }}>({totalAnalyzed} jobs analyzed)</span>}
+                    </h3>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {Object.entries(tiers).map(([key, tier]) => tier.jobs.length > 0 && (
+                        <span key={key} style={{
+                          padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                          background: tier.bg, color: tier.color, border: `1px solid ${tier.border}`,
                         }}>
-                          {job.match_score}% match
-                        </div>
-                      )}
-                      <JobCard job={job} index={i} onViewDetails={(j) => setSelectedJob({ ...j, _match_info: { score: j.match_score, reasoning: j.match_reasoning, matching: j.matching_skills, missing: j.missing_skills } })} />
-                      {/* Match Details */}
-                      {job.match_reasoning && (
-                        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border-color)', fontSize: 12, color: 'var(--text-muted)', background: 'var(--bg-surface)', borderRadius: '0 0 16px 16px', marginTop: -16 }}>
-                          <div style={{ marginBottom: 4 }}>{job.match_reasoning}</div>
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {(job.matching_skills || []).map((s, si) => (
-                              <span key={si} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 11, color: '#34d399' }}>
-                                <CheckCircle size={10} /> {s}
-                              </span>
-                            ))}
-                            {(job.missing_skills || []).map((s, si) => (
-                              <span key={si} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 11, color: '#f87171' }}>
-                                <AlertCircle size={10} /> {s}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                          {tier.emoji} {tier.jobs.length} {tier.label.split(' ')[0]}
+                        </span>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Tier Sections */}
+                  {Object.entries(tiers).map(([tierKey, tier]) => {
+                    if (tier.jobs.length === 0) return null;
+                    return (
+                      <div key={tierKey} style={{ marginBottom: 32 }}>
+                        {/* Tier Header */}
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+                          padding: '10px 16px', borderRadius: 12,
+                          background: tier.bg, border: `1px solid ${tier.border}`,
+                        }}>
+                          <span style={{ fontSize: 20 }}>{tier.emoji}</span>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: tier.color }}>{tier.label}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>
+                            ({tier.jobs.length} {tier.jobs.length === 1 ? 'job' : 'jobs'})
+                          </span>
+                          {tierKey === 'perfect' && <span style={{ fontSize: 11, color: tier.color, marginLeft: 'auto' }}>90-100% skill match</span>}
+                          {tierKey === 'strong' && <span style={{ fontSize: 11, color: tier.color, marginLeft: 'auto' }}>60-89% skill match</span>}
+                          {tierKey === 'good' && <span style={{ fontSize: 11, color: tier.color, marginLeft: 'auto' }}>40-59% skill match</span>}
+                          {tierKey === 'weak' && <span style={{ fontSize: 11, color: tier.color, marginLeft: 'auto' }}>Partial match</span>}
+                        </div>
+
+                        {/* Jobs in this tier */}
+                        <div className="job-grid">
+                          {tier.jobs.map((job, i) => (
+                            <div key={job.id || `${tierKey}-${i}`} style={{ position: 'relative' }}>
+                              {/* Score Badge */}
+                              <div style={{
+                                position: 'absolute', top: 12, right: 12, zIndex: 5,
+                                display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4,
+                              }}>
+                                <div style={{
+                                  padding: '4px 10px', borderRadius: 10, fontSize: 13, fontWeight: 800,
+                                  background: tier.bg, color: tier.color, border: `1px solid ${tier.border}`,
+                                }}>
+                                  {job.match_score}%
+                                </div>
+                                {job.level_match && (
+                                  <div style={{
+                                    padding: '2px 6px', borderRadius: 6, fontSize: 9, fontWeight: 700,
+                                    background: 'rgba(16, 185, 129, 0.15)', color: '#34d399',
+                                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                                  }}>✓ Level Match</div>
+                                )}
+                              </div>
+
+                              <JobCard job={job} index={i} onViewDetails={(j) => setSelectedJob({
+                                ...j,
+                                _match_info: { score: j.match_score, reasoning: j.match_reasoning, matching: j.matching_skills, missing: j.missing_skills, tier: j.match_tier }
+                              })} />
+
+                              {/* Match Details Panel */}
+                              <div style={{
+                                padding: '10px 16px', fontSize: 12,
+                                background: tier.bg, borderRadius: '0 0 16px 16px', marginTop: -16,
+                                borderTop: `1px solid ${tier.border}`,
+                              }}>
+                                {job.match_reasoning && (
+                                  <div style={{ color: 'var(--text-secondary)', marginBottom: 6 }}>{job.match_reasoning}</div>
+                                )}
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  {(job.matching_skills || []).map((s, si) => (
+                                    <span key={`m-${si}`} style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                                      padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600,
+                                      background: 'rgba(16, 185, 129, 0.12)', color: '#34d399',
+                                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                                    }}>
+                                      <CheckCircle size={9} /> {s}
+                                    </span>
+                                  ))}
+                                  {(job.missing_skills || []).map((s, si) => (
+                                    <span key={`x-${si}`} style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                                      padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600,
+                                      background: 'rgba(239, 68, 68, 0.1)', color: '#f87171',
+                                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                                    }}>
+                                      <AlertCircle size={9} /> {s}
+                                    </span>
+                                  ))}
+                                  {(job.matching_skills || []).length === 0 && (job.missing_skills || []).length === 0 && (
+                                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                      Skills analysis pending
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
 

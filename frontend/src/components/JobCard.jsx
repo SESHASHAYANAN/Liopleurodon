@@ -6,11 +6,13 @@ import { formatSalary, timeAgo, getInitials, EXPERIENCE_COLORS, SOURCE_ICONS } f
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
+import JobDetailsModal from './ApplyModal';
 
 export default function JobCard({ job, index, onViewDetails, onSave, savedJobs = [] }) {
   const { user } = useAuth();
   const isSaved = savedJobs.includes(job.id);
   const [saving, setSaving] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const handleSave = async (e) => {
     e.stopPropagation();
@@ -25,10 +27,12 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
 
   const handleApply = (e) => {
     e.stopPropagation();
-    if (job.apply_url) {
-      window.open(job.apply_url, '_blank');
-      toast.success('Opening application page...');
-    }
+    if (job.apply_url) window.open(job.apply_url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDetails = (e) => {
+    e.stopPropagation();
+    setShowDetailsModal(true);
   };
 
   const techTags = (job.tech_stack || []).slice(0, 5);
@@ -216,12 +220,24 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
               </span>
             ))}
           </div>
+          {/* ATS Badge */}
+          {job.ats_detected && (
+            <span title={`ATS: ${job.ats_detected}`} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600,
+              background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              letterSpacing: '0.02em',
+            }}>
+              🏢 {job.ats_detected}
+            </span>
+          )}
           <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
             <Clock size={12} /> {timeAgo(job.posted_date)}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-secondary" onClick={(e) => { e.stopPropagation(); onViewDetails?.(job); }}
+          <button className="btn btn-secondary" onClick={handleDetails}
             style={{ padding: '5px 12px', fontSize: 12, borderRadius: 8 }}>
             Details
           </button>
@@ -231,6 +247,11 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
           </button>
         </div>
       </div>
+
+      {/* Job Details Modal Popup */}
+      {showDetailsModal && (
+        <JobDetailsModal job={job} onClose={() => setShowDetailsModal(false)} />
+      )}
     </motion.div>
   );
 }

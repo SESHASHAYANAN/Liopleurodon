@@ -74,61 +74,77 @@ async def match_resume_pdf(file: UploadFile = File(...), limit: int = Form(20)):
     """
     Upload a PDF resume and get AI-matched jobs.
     Uses Groq (primary) and OpenRouter (fallback) for matching.
-    
-    Flow:
-    1. Extract text from PDF
-    2. Parse resume with AI to get structured profile
-    3. Fetch active jobs from database
-    4. Score each job against resume using AI
-    5. Return top matches with scores and reasoning
     """
-    # 1. Read file content
-    content = await file.read()
-    filename = file.filename or "resume.pdf"
+    try:
+        # 1. Read file content
+        content = await file.read()
+        filename = file.filename or "resume.pdf"
+        print(f"[Match] Received file: {filename} ({len(content)} bytes)")
 
-    # 2. Extract text from PDF
-    if filename.lower().endswith('.pdf'):
-        resume_text = _extract_pdf_text(content)
-    else:
-        resume_text = content.decode("utf-8", errors="ignore")
+        # 2. Extract text from PDF
+        if filename.lower().endswith('.pdf'):
+            resume_text = _extract_pdf_text(content)
+        else:
+            resume_text = content.decode("utf-8", errors="ignore")
 
-    if not resume_text or len(resume_text.strip()) < 50:
-        return {"error": "Could not extract enough text from the uploaded file. Please try a different file.", "matched_jobs": []}
+        if not resume_text or len(resume_text.strip()) < 50:
+            return {"error": "Could not extract enough text from the uploaded file. Please try a different file.", "matched_jobs": []}
 
-    # 3. Parse resume into structured profile
-    parsed_resume = await parse_resume(resume_text)
+        print(f"[Match] Extracted {len(resume_text)} chars from resume")
 
-    # 4. Fetch active jobs from database
-    db = get_supabase_admin()
-    jobs_result = (db.table("jobs")
-                   .select("id, title, company_name, company_logo_url, location_city, location_country, "
-                           "remote_type, salary_min, salary_max, salary_currency, experience_level, "
-                           "job_type, description, tech_stack, apply_url, visa_sponsorship, "
-                           "relocation_support, source_platforms, posted_date, is_featured, vc_backer, company_type")
-                   .eq("is_active", True)
-                   .order("posted_date", desc=True)
-                   .limit(200)
-                   .execute())
+        # 3. Parse resume into structured profile
+        parsed_resume = await parse_resume(resume_text)
+        if not isinstance(parsed_resume, dict):
+            print(f"[Match] Warning: parsed_resume is {type(parsed_resume).__name__}, converting to empty dict")
+            parsed_resume = {}
+        print(f"[Match] Resume parsed: {len(parsed_resume.get('skills', []))} skills, level={parsed_resume.get('experience_level', 'unknown')}")
 
-    all_jobs = jobs_result.data or []
-    if not all_jobs:
+        # 4. Fetch active & recent jobs from database (last 30 days only)
+        from datetime import datetime, timezone, timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+        db = get_supabase_admin()
+        jobs_result = (db.table("jobs")
+                       .select("id, title, company_name, company_logo_url, location_city, location_country, "
+                               "remote_type, salary_min, salary_max, salary_currency, experience_level, "
+                               "job_type, description, tech_stack, apply_url, visa_sponsorship, "
+                               "relocation_support, source_platforms, posted_date, is_featured, vc_backer, company_type")
+                       .eq("is_active", True)
+                       .gte("posted_date", cutoff)
+                       .order("posted_date", desc=True)
+                       .limit(200)
+                       .execute())
+
+        all_jobs = jobs_result.data or []
+        print(f"[Match] Fetched {len(all_jobs)} active jobs (posted after {cutoff[:10]})")
+
+        if not all_jobs:
+            return {
+                "parsed_resume": parsed_resume,
+                "resume_preview": resume_text[:1000],
+                "matched_jobs": [],
+                "message": "No active jobs found to match against."
+            }
+
+        # 5. AI matching using Groq/OpenRouter
+        matched = await match_resume_to_jobs_ai(resume_text, parsed_resume, all_jobs, limit)
+        print(f"[Match] AI matching complete: {len(matched)} matched jobs returned")
+
         return {
             "parsed_resume": parsed_resume,
             "resume_preview": resume_text[:1000],
-            "matched_jobs": [],
-            "message": "No active jobs found to match against."
+            "matched_jobs": matched,
+            "total_jobs_analyzed": len(all_jobs),
+            "filename": filename,
         }
-
-    # 5. AI matching using Groq/OpenRouter
-    matched = await match_resume_to_jobs_ai(resume_text, parsed_resume, all_jobs, limit)
-
-    return {
-        "parsed_resume": parsed_resume,
-        "resume_preview": resume_text[:1000],
-        "matched_jobs": matched,
-        "total_jobs_analyzed": len(all_jobs),
-        "filename": filename,
-    }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[Match] Fatal error: {e}")
+        return {
+            "error": f"Resume matching failed: {str(e)}",
+            "matched_jobs": [],
+            "parsed_resume": {},
+        }
 
 
 @router.get("/insights/{job_id}")
