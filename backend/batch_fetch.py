@@ -40,9 +40,49 @@ async def wait_for_network(max_wait=120):
     return False
 
 
-# Remaining queries (12 onward -- queries 1-11 already completed)
 BATCH_QUERIES = [
-    # Continuing from query 12
+    # ══════════════════════════════════════════════════════════════
+    # PRIORITY: Indian Startup — Junior, Full-Time, Onsite
+    # ══════════════════════════════════════════════════════════════
+    ("junior software engineer startup", "Bangalore"),
+    ("junior software engineer startup", "Mumbai"),
+    ("junior software engineer startup", "Hyderabad"),
+    ("junior software engineer startup", "Pune"),
+    ("junior software engineer startup", "Chennai"),
+    ("junior developer startup", "Delhi"),
+    ("junior developer startup", "Gurgaon"),
+    ("junior developer startup", "Noida"),
+    ("fresher software developer", "Bangalore"),
+    ("fresher software developer", "Mumbai"),
+    ("fresher software developer", "Hyderabad"),
+    ("fresher software developer", "Pune"),
+    ("associate software engineer", "Bangalore"),
+    ("associate software engineer", "India"),
+    ("graduate engineer trainee", "India"),
+    ("graduate engineer trainee", "Bangalore"),
+    ("entry level developer onsite", "India"),
+    ("junior python developer startup", "Bangalore"),
+    ("junior python developer startup", "Hyderabad"),
+    ("junior full stack developer", "Bangalore"),
+    ("junior full stack developer", "Mumbai"),
+    ("junior full stack developer", "Pune"),
+    ("junior backend developer", "India"),
+    ("junior frontend developer", "India"),
+    ("junior data analyst startup", "Bangalore"),
+    ("junior data analyst startup", "Mumbai"),
+    ("junior AI engineer", "India"),
+    ("junior ML engineer startup", "Bangalore"),
+    ("fresher data scientist", "India"),
+    ("trainee software engineer", "India"),
+    ("junior react developer", "Bangalore"),
+    ("junior react developer", "Pune"),
+    ("junior devops engineer", "India"),
+    ("founding engineer", "India"),
+    ("early stage startup engineer", "India"),
+
+    # ══════════════════════════════════════════════════════════════
+    # AI/ML Roles — India & USA
+    # ══════════════════════════════════════════════════════════════
     ("NLP engineer", "United States"),
     ("computer vision engineer", "United States"),
     ("AI researcher", "India"),

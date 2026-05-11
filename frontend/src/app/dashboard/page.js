@@ -6,8 +6,8 @@ import Navbar from '@/components/Navbar';
 import JobCard from '@/components/JobCard';
 import JobDetailPanel from '@/components/JobDetailPanel';
 import { supabase } from '@/lib/supabase';
-import { matchResumeWithPDF } from '@/lib/api';
-import { Bookmark, Briefcase, Bell, FileText, Upload, Sparkles, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { matchResumeWithPDF, matchJobsWithKeywords } from '@/lib/api';
+import { Bookmark, Briefcase, Bell, FileText, Upload, Sparkles, X, CheckCircle, AlertCircle, Search, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -33,9 +33,11 @@ export default function DashboardPage() {
   const [matchedJobs, setMatchedJobs] = useState([]);
   const [parsedResume, setParsedResume] = useState(null);
   const [resumePreview, setResumePreview] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [aiRecommendation, setAiRecommendation] = useState('');
   const [matching, setMatching] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [matchMode, setMatchMode] = useState('pdf'); // 'pdf' or 'text'
+  const [matchMode, setMatchMode] = useState('keywords'); // 'keywords', 'pdf' or 'text'
   const [totalAnalyzed, setTotalAnalyzed] = useState(0);
   const fileInputRef = useRef(null);
 
@@ -64,14 +66,14 @@ export default function DashboardPage() {
   // ─── PDF Upload Handlers ──────────────────────────────────
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
-    if (file) { setPdfFile(file); setMatchedJobs([]); setParsedResume(null); }
+    if (file) { setPdfFile(file); setMatchedJobs([]); setParsedResume(null); setAiRecommendation(''); }
   };
 
   const handleDrop = (e) => {
     e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file && (file.type === 'application/pdf' || file.name.endsWith('.pdf'))) {
-      setPdfFile(file); setMatchedJobs([]); setParsedResume(null);
+      setPdfFile(file); setMatchedJobs([]); setParsedResume(null); setAiRecommendation('');
     } else { toast.error('Please upload a PDF file'); }
   };
 
@@ -104,6 +106,7 @@ export default function DashboardPage() {
   const handleTextMatch = async () => {
     if (!resumeText.trim()) { toast.error('Please paste your resume text'); return; }
     setMatching(true);
+    setAiRecommendation('');
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/ai/match-jobs`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -113,6 +116,30 @@ export default function DashboardPage() {
       setMatchedJobs(data.matched_jobs || []);
       toast.success(`Found ${data.matched_jobs?.length || 0} matching jobs!`);
     } catch { toast.error('AI matching failed'); }
+    setMatching(false);
+  };
+
+  const handleKeywordMatch = async () => {
+    if (!keywords.trim()) { toast.error('Please enter some keywords'); return; }
+    setMatching(true);
+    setParsedResume(null);
+    setAiRecommendation('');
+    try {
+      const keywordList = keywords.split(',').map(k => k.trim()).filter(Boolean);
+      const data = await matchJobsWithKeywords({ keywords: keywordList, limit: 30 });
+      if (data.error) {
+        toast.error(data.error);
+        setMatchedJobs([]);
+      } else {
+        setMatchedJobs(data.matched_jobs || []);
+        setTotalAnalyzed(data.total_analyzed || 0);
+        setAiRecommendation(data.ai_recommendation || '');
+        toast.success(`Found ${data.matched_jobs?.length || 0} matching jobs!`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('AI matching failed');
+    }
     setMatching(false);
   };
 
@@ -204,6 +231,11 @@ export default function DashboardPage() {
           <div>
             {/* Mode Toggle */}
             <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--bg-elevated)', borderRadius: 12, padding: 4, width: 'fit-content' }}>
+              <button onClick={() => setMatchMode('keywords')} style={{
+                padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
+                background: matchMode === 'keywords' ? 'var(--accent-primary)' : 'transparent',
+                color: matchMode === 'keywords' ? '#fff' : 'var(--text-muted)',
+              }}>⚡ Quick Match</button>
               <button onClick={() => setMatchMode('pdf')} style={{
                 padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
                 background: matchMode === 'pdf' ? 'var(--accent-primary)' : 'transparent',
@@ -215,6 +247,33 @@ export default function DashboardPage() {
                 color: matchMode === 'text' ? '#fff' : 'var(--text-muted)',
               }}>📝 Paste Text</button>
             </div>
+
+            {/* Keywords Match Mode */}
+            {matchMode === 'keywords' && (
+              <div className="card" style={{ padding: 24, marginBottom: 24, background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.05), rgba(59, 130, 246, 0.05))' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <Search size={18} style={{ color: '#34d399' }} />
+                  <h3 style={{ fontSize: 16, fontWeight: 700 }}>Quick Match — Keywords</h3>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Enter skills, titles, or technologies (comma separated) to find and rank the most relevant new jobs.
+                </p>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                  <input 
+                    type="text" 
+                    value={keywords} 
+                    onChange={(e) => setKeywords(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleKeywordMatch()}
+                    placeholder="e.g. React, Node.js, Python, Remote..." 
+                    className="input"
+                    style={{ flex: 1 }}
+                  />
+                  <button className="btn btn-primary" onClick={handleKeywordMatch} disabled={matching}>
+                    {matching ? 'Scoring...' : 'Match Jobs'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* PDF Upload Mode */}
             {matchMode === 'pdf' && (
@@ -337,6 +396,24 @@ export default function DashboardPage() {
 
               return (
                 <div>
+                  {/* Stats & AI Recommendation */}
+                  {aiRecommendation && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      className="card" style={{ padding: 16, marginBottom: 24, background: 'rgba(124, 58, 237, 0.05)', border: '1px solid rgba(124, 58, 237, 0.2)' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                        <div style={{ background: 'rgba(124, 58, 237, 0.1)', padding: 8, borderRadius: 8, color: '#a78bfa' }}>
+                          <Sparkles size={20} />
+                        </div>
+                        <div>
+                          <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: 'var(--text-primary)' }}>AI Career Advisor</h4>
+                          <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                            {aiRecommendation}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {/* Stats Bar */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                     <h3 style={{ fontSize: 18, fontWeight: 800 }}>
@@ -416,8 +493,42 @@ export default function DashboardPage() {
                                   <div style={{ color: 'var(--text-secondary)', marginBottom: 6 }}>{job.match_reasoning}</div>
                                 )}
                                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                  {/* Quality Rating */}
+                                  {job.quality_rating && (
+                                    <span style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                                      padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+                                      background: 'rgba(251, 191, 36, 0.15)', color: '#f59e0b',
+                                      border: '1px solid rgba(251, 191, 36, 0.3)',
+                                    }}>
+                                      <Star size={10} fill="currentColor" /> {job.quality_rating.stars}/5 Quality
+                                    </span>
+                                  )}
+                                  
+                                  {/* New Badge */}
+                                  {job.is_new && (
+                                    <span style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                                      padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+                                      background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6',
+                                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                                    }}>
+                                      ✨ New
+                                    </span>
+                                  )}
+
                                   {(job.matching_skills || []).map((s, si) => (
                                     <span key={`m-${si}`} style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                                      padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600,
+                                      background: 'rgba(16, 185, 129, 0.12)', color: '#34d399',
+                                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                                    }}>
+                                      <CheckCircle size={9} /> {s}
+                                    </span>
+                                  ))}
+                                  {(job.matched_keywords || []).map((s, si) => (
+                                    <span key={`mk-${si}`} style={{
                                       display: 'inline-flex', alignItems: 'center', gap: 3,
                                       padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600,
                                       background: 'rgba(16, 185, 129, 0.12)', color: '#34d399',
@@ -436,7 +547,7 @@ export default function DashboardPage() {
                                       <AlertCircle size={9} /> {s}
                                     </span>
                                   ))}
-                                  {(job.matching_skills || []).length === 0 && (job.missing_skills || []).length === 0 && (
+                                  {(job.matching_skills || []).length === 0 && (job.matched_keywords || []).length === 0 && (job.missing_skills || []).length === 0 && !job.quality_rating && (
                                     <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                                       Skills analysis pending
                                     </span>

@@ -111,3 +111,10 @@ export async function matchResumeWithPDF(file, limit = 20) {
   }
   throw lastError;
 }
+
+export async function matchJobsWithKeywords(params) {
+  return fetchApi('/api/ai/keyword-match', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}

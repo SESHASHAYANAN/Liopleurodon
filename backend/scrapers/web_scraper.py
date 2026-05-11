@@ -865,10 +865,21 @@ async def scrape_adzuna_india(client: httpx.AsyncClient) -> list:
 # ─── Main Scrape Orchestrator ───────────────────────────────────
 
 async def run_web_scrape() -> dict:
-    """Run all web scrapers and return combined results."""
+    """Run all web scrapers and return combined results.
+    Indian startup junior/onsite jobs are scraped FIRST and placed at the top.
+    """
     print(f"[WebScraper] Starting scrape cycle at {datetime.now(timezone.utc).isoformat()}")
 
     async with httpx.AsyncClient(timeout=30) as client:
+        # ─── PRIORITY: Indian Startup Junior Onsite Jobs (scraped first) ───
+        from scrapers.india_startups import run_india_startup_scrape
+        india_jobs = []
+        try:
+            india_jobs = await run_india_startup_scrape(client)
+            print(f"[WebScraper] Indian startup jobs: {len(india_jobs)} found (priority)")
+        except Exception as e:
+            print(f"[WebScraper] Indian startup scrape error (non-fatal): {e}")
+
         tasks = [
             # ─── Original sources ───
             scrape_workatastartup(client),
@@ -880,7 +891,7 @@ async def run_web_scrape() -> dict:
             scrape_web3_career(client, "web3-companies/okx+remote", "Web3-OKX"),
             scrape_migratemate(client),
             scrape_arbeitnow(client),
-            # ─── NEW: AI + Indian Startup sources ───
+            # ─── AI + Indian Startup sources ───
             scrape_remotive(client),
             scrape_remotive_ai(client),
             scrape_hasjob(client),
@@ -901,8 +912,8 @@ async def run_web_scrape() -> dict:
             if i < len(tasks) - 1:
                 await asyncio.sleep(1)  # 1 second between sites
 
-    # Flatten
-    all_jobs = []
+    # Flatten — Indian startup jobs go FIRST (top of feed)
+    all_jobs = list(india_jobs)
     for batch in results:
         if isinstance(batch, list):
             all_jobs.extend(batch)
@@ -910,7 +921,7 @@ async def run_web_scrape() -> dict:
     # Deduplicate and store
     inserted, updated = await _store_scraped_jobs(all_jobs)
 
-    print(f"[WebScraper] Cycle complete: {len(all_jobs)} found, {inserted} inserted, {updated} updated")
+    print(f"[WebScraper] Cycle complete: {len(all_jobs)} found ({len(india_jobs)} Indian priority), {inserted} inserted, {updated} updated")
     return {"total_found": len(all_jobs), "inserted": inserted, "updated": updated}
 
 
@@ -972,7 +983,10 @@ async def mark_stale_jobs():
         web_sources = ["WebScraper", "YC-WATS", "YC-Jobs", "Simplify", "ArcDev",
                        "Web3-DS", "Web3-Remote", "Web3-OKX", "MigrateMate", "Arbeitnow",
                        "Remotive", "Remotive-AI", "HasJob", "Jobicy", "Himalayas",
-                       "RemoteOK", "AI-Jobs", "Karkidi", "Instahyre", "Adzuna-IN"]
+                       "RemoteOK", "AI-Jobs", "Karkidi", "Instahyre", "Adzuna-IN",
+                       "Adzuna-IN-Junior", "Internshala", "Freshersworld",
+                       "CutShort", "Wellfound-IN", "Naukri-Startups",
+                       "Shine-Startups", "TimesJobs"]
 
         for source in web_sources:
             try:
@@ -996,14 +1010,14 @@ async def mark_stale_jobs():
     except Exception as e:
         print(f"[WebScraper] mark_stale_jobs error: {e}")
 
-    # ─── 2. Deactivate globally expired jobs (posted > 45 days ago) ──
+    # ─── 2. Deactivate globally expired jobs (posted > 21 days ago) ──
     try:
-        expiry_cutoff = (datetime.now(timezone.utc) - timedelta(days=45)).isoformat()
+        expiry_cutoff = (datetime.now(timezone.utc) - timedelta(days=21)).isoformat()
         expired = (db.table("jobs")
                    .select("id")
                    .eq("is_active", True)
                    .lt("posted_date", expiry_cutoff)
-                   .limit(100)
+                   .limit(500)
                    .execute())
 
         if expired.data:

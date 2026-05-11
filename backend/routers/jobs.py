@@ -1,8 +1,8 @@
 """
 Liopleurodon — Jobs Router
 Search, filter, and retrieve job listings.
-Featured (⭐) jobs appear first, then newest scraped jobs on top (sorted by created_at).
-Expired jobs (posted_date > 45 days ago) are automatically filtered out or pushed to bottom.
+Featured (⭐) jobs appear first, then newest posted jobs on top (sorted by posted_date).
+Expired jobs (posted_date > 21 days ago) are automatically filtered out.
 """
 
 from fastapi import APIRouter, Query
@@ -13,7 +13,7 @@ from database import get_supabase_admin
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 # ─── Expiry threshold: jobs older than this are considered expired ──
-EXPIRY_DAYS = 45
+EXPIRY_DAYS = 21
 
 
 @router.get("")
@@ -34,17 +34,17 @@ async def search_jobs(
     posted_within: Optional[str] = None,
     page: int = 1,
     per_page: int = 20,
-    sort_by: str = "created_at",
+    sort_by: str = "posted_date",
     sort_order: str = "desc",
 ):
     """Search and filter jobs with pagination.
-    Featured jobs sort to top, then by created_at desc (newest scraped first).
-    Expired jobs (posted > 45 days ago) are excluded from results.
+    Featured jobs sort to top, then by posted_date desc (newest posted first).
+    Expired jobs (posted > 21 days ago) are excluded from results.
     """
     db = get_supabase_admin()
     now = datetime.now(timezone.utc)
 
-    # ─── Expiry cutoff: exclude jobs with posted_date older than 45 days ──
+    # ─── Expiry cutoff: exclude jobs with posted_date older than 21 days ──
     expiry_cutoff = (now - timedelta(days=EXPIRY_DAYS)).isoformat()
 
     # ─── Featured Jobs Query ─────────────────────────────────

@@ -69,6 +69,16 @@ SEARCH_QUERIES = [
     "solutions architect",
     "technical program manager",
     "engineering manager",
+    # Indian startup junior/fresher focus
+    "junior software engineer startup",
+    "fresher software developer",
+    "associate software engineer",
+    "graduate engineer trainee",
+    "junior python developer",
+    "junior full stack developer",
+    "junior data analyst",
+    "junior AI engineer",
+    "founding engineer",
 ]
 
 LOCATIONS = [
@@ -86,6 +96,14 @@ LOCATIONS = [
     "San Francisco",
     "New York",
     "London",
+    # Indian cities for startup onsite roles
+    "Mumbai",
+    "Hyderabad",
+    "Pune",
+    "Chennai",
+    "Delhi",
+    "Gurgaon",
+    "Noida",
 ]
 
 last_scrape_status = {
