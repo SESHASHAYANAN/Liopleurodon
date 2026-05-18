@@ -1,0 +1,37 @@
+# ── Environments ──
+.env
+.env.local
+.env.*.local
+
+# ── Node / Frontend ──
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+build/
+
+# ── Python / Backend ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env/
+*.egg-info/
+*.egg
+dist/
+*.db
+
+# ── IDEs and OS ──
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Project-specific ──
+*.log
