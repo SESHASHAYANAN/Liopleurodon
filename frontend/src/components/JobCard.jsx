@@ -221,17 +221,15 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
             ))}
           </div>
           {/* ATS Badge */}
-          {job.ats_detected && (
-            <span title={`ATS: ${job.ats_detected}`} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3,
-              padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600,
-              background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
-              letterSpacing: '0.02em',
-            }}>
-              🏢 {job.ats_detected}
-            </span>
-          )}
+          <span title={`ATS: ${job.ats_detected || 'Unknown ATS'}`} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 3,
+            padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600,
+            background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8',
+            border: '1px solid rgba(99, 102, 241, 0.25)',
+            letterSpacing: '0.02em',
+          }}>
+            🏢 {job.ats_detected || 'Unknown ATS'}
+          </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
             <Clock size={12} /> {timeAgo(job.posted_date)}
           </span>

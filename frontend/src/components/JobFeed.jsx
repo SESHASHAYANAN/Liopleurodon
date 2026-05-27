@@ -56,10 +56,22 @@ export default function JobFeed() {
 
       if (!isMounted.current) return;
 
+      const newJobs = data.jobs || [];
       if (append) {
-        setJobs(prev => [...prev, ...(data.jobs || [])]);
+        setJobs(prev => {
+          const seen = new Set(prev.map(j => j.id));
+          const unique = newJobs.filter(j => !seen.has(j.id));
+          return [...prev, ...unique];
+        });
       } else {
-        setJobs(data.jobs || []);
+        // Deduplicate within a single page response
+        const seen = new Set();
+        const unique = newJobs.filter(j => {
+          if (seen.has(j.id)) return false;
+          seen.add(j.id);
+          return true;
+        });
+        setJobs(unique);
       }
       setTotalPages(data.total_pages || 1);
       setConnectionError(false);
@@ -242,7 +254,7 @@ export default function JobFeed() {
         <div className="job-grid">
           {jobs.map((job, i) => (
             <JobCard
-              key={job.id || i}
+              key={`${job.id}-${i}`}
               job={job}
               index={i}
               onViewDetails={setSelectedJob}

@@ -150,7 +150,87 @@ ATS_URL_PATTERNS = [
 
     # ApplyBoard
     (re.compile(r'applyboard\.com', re.I), 'ApplyBoard'),
+    # Adzuna (redirect URL)
+    (re.compile(r'adzuna\\.com', re.I), 'Adzuna'),
+    (re.compile(r'adzuna\\.co', re.I), 'Adzuna'),
+
+    # Remotive
+    (re.compile(r'remotive\\.com', re.I), 'Remotive'),
+
+    # Arbeitnow
+    (re.compile(r'arbeitnow\\.com', re.I), 'Arbeitnow'),
+
+    # Indian Platforms
+    (re.compile(r'naukri\\.com', re.I), 'Naukri'),
+    (re.compile(r'instahyre\\.com', re.I), 'Instahyre'),
+    (re.compile(r'cutshort\\.io', re.I), 'Cutshort'),
+    (re.compile(r'hirist\\.com', re.I), 'Hirist'),
+    (re.compile(r'hackerearth\\.com', re.I), 'HackerEarth'),
+    (re.compile(r'hackerrank\\.com', re.I), 'HackerRank'),
+    (re.compile(r'angel\\.co', re.I), 'AngelList'),
+    (re.compile(r'internshala\\.com', re.I), 'Internshala'),
+    (re.compile(r'foundit\\.in', re.I), 'Foundit'),
+    (re.compile(r'shine\\.com', re.I), 'Shine'),
+    (re.compile(r'timesjobs\\.com', re.I), 'TimesJobs'),
+    (re.compile(r'iimjobs\\.com', re.I), 'IIMJobs'),
+
+    # Additional Global ATS
+    (re.compile(r'applytojob\\.com', re.I), 'ApplyToJob'),
+    (re.compile(r'teamtailor\\.com', re.I), 'Teamtailor'),
+    (re.compile(r'pinpointhq\\.com', re.I), 'Pinpoint'),
+    (re.compile(r'comeet\\.co', re.I), 'Comeet'),
+    (re.compile(r'hirebridge\\.com', re.I), 'Hirebridge'),
+    (re.compile(r'paylocity\\.com', re.I), 'Paylocity'),
+    (re.compile(r'paycom\\.com', re.I), 'Paycom'),
+    (re.compile(r'ultipro\\.com', re.I), 'UKG (UltiPro)'),
+    (re.compile(r'adp\\.com', re.I), 'ADP'),
+    (re.compile(r'ceridian\\.com', re.I), 'Ceridian Dayforce'),
+    (re.compile(r'cornerstone.*careers', re.I), 'Cornerstone'),
+    (re.compile(r'eightfold\\.ai', re.I), 'Eightfold AI'),
+    (re.compile(r'phenom.*careers', re.I), 'Phenom'),
+    (re.compile(r'jobsoid\\.com', re.I), 'Jobsoid'),
+    (re.compile(r'zohorecruit', re.I), 'Zoho Recruit'),
+    (re.compile(r'avature\\.net', re.I), 'Avature'),
 ]
+
+# ─── Company-Name-to-ATS Mapping ─────────────────────────────────
+# Known big companies and which ATS they use.
+COMPANY_ATS_MAP = {
+    "google": "Google Careers", "alphabet": "Google Careers",
+    "meta": "Meta Careers", "facebook": "Meta Careers",
+    "amazon": "Amazon Jobs", "apple": "Apple Careers",
+    "microsoft": "Microsoft Careers", "netflix": "Netflix Jobs",
+    "uber": "Greenhouse", "airbnb": "Greenhouse",
+    "stripe": "Greenhouse", "coinbase": "Greenhouse",
+    "figma": "Greenhouse", "notion": "Greenhouse",
+    "discord": "Greenhouse", "ramp": "Greenhouse",
+    "brex": "Greenhouse", "rippling": "Greenhouse",
+    "databricks": "Greenhouse", "snowflake": "Greenhouse",
+    "datadog": "Greenhouse", "dbt labs": "Greenhouse",
+    "salesforce": "Workday", "adobe": "Workday",
+    "oracle": "Taleo", "ibm": "Workday",
+    "cisco": "Workday", "intel": "Workday",
+    "nvidia": "Workday", "qualcomm": "Workday",
+    "sap": "SAP SuccessFactors", "infosys": "Infosys Careers",
+    "tcs": "TCS iON", "wipro": "Wipro Careers",
+    "hcl": "HCL Careers", "cognizant": "Workday",
+    "accenture": "Workday", "capgemini": "SmartRecruiters",
+    "deloitte": "Deloitte Careers", "ey": "Workday",
+    "kpmg": "Workday", "pwc": "Workday",
+    "jpmorgan": "Workday", "goldman sachs": "Workday",
+    "morgan stanley": "iCIMS", "bank of america": "Workday",
+    "flipkart": "Flipkart Careers", "swiggy": "Lever",
+    "zomato": "Lever", "razorpay": "Lever",
+    "phonepe": "Greenhouse", "paytm": "Paytm Careers",
+    "ola": "Lever", "meesho": "Lever",
+    "cred": "Lever", "zerodha": "Zerodha Careers",
+    "freshworks": "Freshteam", "zoho": "Zoho Recruit",
+    "byju's": "Lever", "unacademy": "Lever",
+    "dream11": "Greenhouse", "sharechat": "Lever",
+    "postman": "Greenhouse", "browserstack": "Greenhouse",
+    "atlassian": "Workday", "thoughtspot": "Greenhouse",
+    "sprinklr": "Lever",
+}
 
 
 def detect_ats_from_url(apply_url: Optional[str]) -> Optional[str]:
@@ -219,19 +299,25 @@ async def detect_ats_with_ai(company_name: str, apply_url: str) -> Optional[str]
 async def detect_ats(company_name: str, apply_url: Optional[str]) -> Optional[str]:
     """
     Detect ATS using URL patterns first, then Groq AI fallback.
-    Returns the ATS name or None.
+    Returns the ATS name or Unknown ATS.
     """
-    if not apply_url:
-        return None
-
     # Step 1: Fast URL pattern matching
     ats = detect_ats_from_url(apply_url)
     if ats:
         return ats
 
-    # Step 2: Groq AI fallback for unknown URLs
+    # Step 2: Check company map
+    if company_name:
+        ats = COMPANY_ATS_MAP.get(company_name.lower())
+        if ats:
+            return ats
+
+    if not apply_url:
+        return "Unknown ATS"
+
+    # Step 3: Groq AI fallback for unknown URLs
     ats = await detect_ats_with_ai(company_name, apply_url)
-    return ats
+    return ats or "Unknown ATS"
 
 
 async def detect_ats_batch(jobs: list) -> list:
@@ -247,6 +333,9 @@ async def detect_ats_batch(jobs: list) -> list:
         company_name = job.get("company_name", "")
 
         ats = detect_ats_from_url(apply_url)
+        if not ats and company_name:
+            ats = COMPANY_ATS_MAP.get(company_name.lower())
+
         if ats:
             job["ats_detected"] = ats
         else:
@@ -256,7 +345,12 @@ async def detect_ats_batch(jobs: list) -> list:
     if unknown_jobs:
         ats_results = await _batch_detect_ats_groq(unknown_jobs)
         for job, ats_name in zip(unknown_jobs, ats_results):
-            job["ats_detected"] = ats_name  # may be None
+            job["ats_detected"] = ats_name or "Unknown ATS"
+
+    # Ensure all jobs have an ats_detected field
+    for job in jobs:
+        if not job.get("ats_detected"):
+            job["ats_detected"] = "Unknown ATS"
 
     return jobs
 

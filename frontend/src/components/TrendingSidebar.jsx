@@ -49,17 +49,6 @@ export default function TrendingSidebar() {
     { icon: <span style={{fontSize: 14}}>🏠</span>, label: 'Relocation', value: stats?.relo_jobs || 0, color: 'var(--accent-primary)' },
   ];
 
-  const trendingCompanies = [
-    { name: 'OpenAI', badge: 'YC', jobs: 42 },
-    { name: 'Stripe', badge: 'Sequoia', jobs: 38 },
-    { name: 'Vercel', badge: 'Accel', jobs: 29 },
-    { name: 'Supabase', badge: 'YC', jobs: 24 },
-    { name: 'Figma', badge: 'a16z', jobs: 21 },
-    { name: 'Linear', badge: 'Sequoia', jobs: 18 },
-    { name: 'Notion', badge: 'Accel', jobs: 16 },
-    { name: 'Railway', badge: 'YC', jobs: 12 },
-  ];
-
   return (
     <aside style={{
       position: 'sticky', top: 96,
@@ -87,51 +76,6 @@ export default function TrendingSidebar() {
               </div>
               <span style={{ fontSize: 15, fontWeight: 700, color: item.color }}>
                 {loading ? '—' : item.value.toLocaleString()}
-              </span>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Trending Companies */}
-      <div className="card" style={{ padding: 20 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
-          🔥 Trending Companies
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {trendingCompanies.map((company, i) => (
-            <motion.div key={company.name}
-              onClick={() => updateFilter('q', company.name)}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              whileHover={{ x: 4 }}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-elevated)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{
-                  width: 28, height: 28, borderRadius: 8,
-                  background: 'var(--gradient-primary)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontSize: 12, fontWeight: 700, color: '#fff',
-                }}>
-                  {company.name[0]}
-                </span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{company.name}</div>
-                  <span className="badge badge-primary" style={{ fontSize: 9, padding: '1px 6px' }}>
-                    {company.badge}
-                  </span>
-                </div>
-              </div>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {company.jobs} jobs
               </span>
             </motion.div>
           ))}

@@ -58,7 +58,12 @@ async def search_jobs(
         if q:
             feat_query = feat_query.or_(f"title.ilike.%{q}%,company_name.ilike.%{q}%,description.ilike.%{q}%")
         if location:
-            feat_query = feat_query.or_(f"location_city.ilike.%{location}%,location_country.ilike.%{location}%")
+            loc_aliases = {"india": "IN", "united states": "US", "usa": "US", "united kingdom": "GB", "uk": "GB", "canada": "CA", "australia": "AU"}
+            alias = loc_aliases.get(location.lower(), "")
+            if alias:
+                feat_query = feat_query.or_(f"location_city.ilike.%{location}%,location_country.ilike.%{location}%,location_country.eq.{alias}")
+            else:
+                feat_query = feat_query.or_(f"location_city.ilike.%{location}%,location_country.ilike.%{location}%")
         if remote_type:
             feat_query = feat_query.eq("remote_type", remote_type)
         if experience_level:
@@ -101,7 +106,16 @@ async def search_jobs(
 
     # Filters
     if location:
-        query = query.or_(f"location_city.ilike.%{location}%,location_country.ilike.%{location}%")
+        # Map common location searches to also match country codes
+        loc_aliases = {
+            "india": "IN", "united states": "US", "usa": "US", 
+            "united kingdom": "GB", "uk": "GB", "canada": "CA", "australia": "AU",
+        }
+        alias = loc_aliases.get(location.lower(), "")
+        if alias:
+            query = query.or_(f"location_city.ilike.%{location}%,location_country.ilike.%{location}%,location_country.eq.{alias}")
+        else:
+            query = query.or_(f"location_city.ilike.%{location}%,location_country.ilike.%{location}%")
     if remote_type:
         query = query.eq("remote_type", remote_type)
     if experience_level:
@@ -139,8 +153,28 @@ async def search_jobs(
     offset = (page - 1) * per_page
     query = query.range(offset, offset + per_page - 1)
 
-    result = query.execute()
-    regular_jobs = result.data or []
+    try:
+        result = query.execute()
+        regular_jobs = result.data or []
+    except Exception as e:
+        # PostgREST PGRST103: offset exceeds available rows — return empty page
+        if "PGRST103" in str(e) or "range not satisfiable" in str(e).lower():
+            # Re-run without range to get the total count only
+            count_query = db.table("jobs").select("id", count="exact").eq("is_active", True)
+            try:
+                count_query = count_query.neq("is_featured", True)
+            except Exception:
+                pass
+            count_query = count_query.gte("posted_date", expiry_cutoff)
+            count_result = count_query.execute()
+
+            class _EmptyResult:
+                data = []
+                count = count_result.count or 0
+            result = _EmptyResult()
+            regular_jobs = []
+        else:
+            raise
 
     # ─── Combine: Featured first (page 1 only), then regular ─
     ten_min_ago = (now - timedelta(minutes=10)).isoformat()
