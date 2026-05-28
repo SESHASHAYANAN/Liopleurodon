@@ -210,8 +210,9 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderTop: '1px solid var(--border-color)', paddingTop: 12, marginTop: 4,
+        flexWrap: 'wrap', gap: 8,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
           {/* Source icons */}
           <div style={{ display: 'flex', gap: 2 }}>
             {(job.source_platforms || []).map((src) => (
@@ -234,7 +235,7 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
             <Clock size={12} /> {timeAgo(job.posted_date)}
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
           <button className="btn btn-secondary" onClick={handleDetails}
             style={{ padding: '5px 12px', fontSize: 12, borderRadius: 8 }}>
             Details

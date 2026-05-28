@@ -270,3 +270,70 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* ══════════════════════════════════════════════════════
+   NAVBAR — Desktop: hide mobile controls
+   Mobile: hide desktop controls, show mobile controls
+   ══════════════════════════════════════════════════════ */
+
+/* Desktop: hide mobile-only elements */
+.navbar-search-mobile-btn {
+  display: none !important;
+}
+.navbar-mobile-search-dropdown {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════
+   MOBILE ≤ 768px
+   Everything below ONLY affects phones & small tablets.
+   Nothing above this line is changed.
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ─── Navbar: compact for mobile ─────────────── */
+  .navbar-search-desktop {
+    display: none !important;
+  }
+  .navbar-search-mobile-btn {
+    display: inline-flex !important;
+  }
+  .navbar-mobile-search-dropdown {
+    display: block;
+  }
+  .navbar-filter-text {
+    display: none !important;
+  }
+  .navbar-brand-text {
+    display: none !important;
+  }
+
+  /* ─── Cards: disable hover movement on touch ─── */
+  .card:hover {
+    transform: none;
+  }
+
+  /* ─── Input: prevent iOS auto-zoom ───────────── */
+  .input {
+    font-size: 16px;
+  }
+
+  /* ─── Main layout: single column ─────────────── */
+  .main-layout {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  /* ─── Filter panel: hide from grid on mobile
+        (it becomes a fixed overlay via component) ── */
+  .main-layout > aside {
+    display: none !important;
+  }
+}
+
+/* ─── Safe area for notched phones (iPhone) ──────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

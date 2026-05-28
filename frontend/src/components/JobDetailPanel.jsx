@@ -42,7 +42,8 @@ export default function JobDetailPanel({ job, onClose }) {
       >
         <motion.div className="slide-panel" onClick={(e) => e.stopPropagation()}
           style={{
-            position: 'fixed', right: 0, top: 0, bottom: 0, width: 560, maxWidth: '100vw',
+            position: 'fixed', right: 0, top: 0, bottom: 0, width: 560,
+            maxWidth: '100vw',
             background: 'var(--bg-surface)', borderLeft: '1px solid var(--border-color)',
             display: 'flex', flexDirection: 'column', zIndex: 61,
           }}
@@ -85,7 +86,7 @@ export default function JobDetailPanel({ job, onClose }) {
           {/* Body */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
             {/* Meta Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
               <MetaItem icon={<MapPin size={15} />} label="Location" value={`${job.location_city || ''}${job.location_country ? `, ${job.location_country}` : ''}` || 'Not specified'} />
               <MetaItem icon={<Briefcase size={15} />} label="Type" value={job.job_type || 'Not specified'} />
               <MetaItem icon={<DollarSign size={15} />} label="Salary" value={formatSalary(job.salary_min, job.salary_max, job.salary_currency)} highlight />

@@ -13,7 +13,7 @@ export default function Home() {
     <>
       <Navbar onToggleFilters={() => setShowFilters(!showFilters)} showFilters={showFilters} />
       <main className="main-layout">
-        {/* Left Sidebar — Filters */}
+        {/* Left Sidebar — Filters (hidden on mobile via CSS, shown as overlay when toggled) */}
         <FilterPanel show={showFilters} onClose={() => setShowFilters(false)} />
 
         {/* Center — Job Feed */}

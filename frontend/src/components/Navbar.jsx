@@ -13,6 +13,7 @@ export default function Navbar({ onToggleFilters, showFilters }) {
   const [searchValue, setSearchValue] = useState(filters.q || '');
   const [showAuth, setShowAuth] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // Sync search input if filter is updated externally (e.g., from Trending Sidebar)
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function Navbar({ onToggleFilters, showFilters }) {
   const handleSearch = (e) => {
     e.preventDefault();
     updateFilter('q', searchValue);
+    setMobileSearchOpen(false);
   };
 
   return (
@@ -42,7 +44,7 @@ export default function Navbar({ onToggleFilters, showFilters }) {
           }}>
             🦕
           </div>
-          <span style={{
+          <span className="navbar-brand-text" style={{
             fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em',
             background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -51,8 +53,8 @@ export default function Navbar({ onToggleFilters, showFilters }) {
           </span>
         </a>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: 600, margin: '0 auto' }}>
+        {/* Search Bar — Desktop */}
+        <form onSubmit={handleSearch} className="navbar-search-desktop" style={{ flex: 1, maxWidth: 600, margin: '0 auto' }}>
           <div style={{ position: 'relative' }}>
             <Search size={18} style={{
               position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
@@ -81,13 +83,22 @@ export default function Navbar({ onToggleFilters, showFilters }) {
 
         {/* Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {/* Mobile search toggle — hidden on desktop via CSS */}
+          <button
+            className="btn btn-ghost navbar-search-mobile-btn"
+            onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+            style={{ padding: 8 }}
+          >
+            {mobileSearchOpen ? <X size={20} /> : <Search size={20} />}
+          </button>
+
           <button
             className="btn btn-ghost"
             onClick={onToggleFilters}
             style={{ position: 'relative', padding: '8px 12px' }}
           >
             <SlidersHorizontal size={18} />
-            <span style={{ fontSize: 13 }}>Filters</span>
+            <span className="navbar-filter-text" style={{ fontSize: 13 }}>Filters</span>
           </button>
 
           {user ? (
@@ -143,6 +154,52 @@ export default function Navbar({ onToggleFilters, showFilters }) {
           )}
         </div>
       </nav>
+
+      {/* Mobile Search Dropdown — only shown when toggled */}
+      <AnimatePresence>
+        {mobileSearchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="navbar-mobile-search-dropdown"
+            style={{
+              position: 'sticky', top: 72, zIndex: 49,
+              background: 'var(--bg-surface)',
+              borderBottom: '1px solid var(--border-color)',
+              overflow: 'hidden',
+            }}
+          >
+            <form onSubmit={handleSearch} style={{ padding: '10px 16px' }}>
+              <div style={{ position: 'relative' }}>
+                <Search size={18} style={{
+                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)',
+                }} />
+                <input
+                  type="text"
+                  placeholder="Search jobs, companies, skills..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  className="input"
+                  autoFocus
+                  style={{ paddingLeft: 44, borderRadius: 100, height: 44, fontSize: 16 }}
+                />
+                {searchValue && (
+                  <button type="button" onClick={() => { setSearchValue(''); updateFilter('q', ''); }}
+                    style={{
+                      position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)',
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}

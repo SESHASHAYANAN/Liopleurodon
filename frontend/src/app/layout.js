@@ -9,6 +9,14 @@ export const metadata = {
   keywords: "jobs, tech jobs, startup jobs, remote jobs, VC-backed, YC, a16z, job search",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
+  themeColor: '#0a0a0f',
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>

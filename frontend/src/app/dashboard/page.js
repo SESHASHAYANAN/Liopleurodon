@@ -157,11 +157,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border-color)', paddingBottom: 0 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border-color)', paddingBottom: 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', fontSize: 14, fontWeight: 600,
-              background: 'none', border: 'none', cursor: 'pointer',
+              background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               color: activeTab === tab.id ? 'var(--accent-primary)' : 'var(--text-muted)',
               borderBottom: activeTab === tab.id ? '2px solid var(--accent-primary)' : '2px solid transparent',
               transition: 'all 0.2s', marginBottom: -1,
@@ -258,7 +258,7 @@ export default function DashboardPage() {
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
                   Enter skills, titles, or technologies (comma separated) to find and rank the most relevant new jobs.
                 </p>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
                   <input 
                     type="text" 
                     value={keywords} 
@@ -266,9 +266,10 @@ export default function DashboardPage() {
                     onKeyDown={(e) => e.key === 'Enter' && handleKeywordMatch()}
                     placeholder="e.g. React, Node.js, Python, Remote..." 
                     className="input"
-                    style={{ flex: 1 }}
+                    style={{ flex: '1 1 200px', minWidth: 0 }}
                   />
-                  <button className="btn btn-primary" onClick={handleKeywordMatch} disabled={matching}>
+                  <button className="btn btn-primary" onClick={handleKeywordMatch} disabled={matching}
+                    style={{ flex: '0 0 auto', width: '100%', maxWidth: 200 }}>
                     {matching ? 'Scoring...' : 'Match Jobs'}
                   </button>
                 </div>
@@ -356,7 +357,7 @@ export default function DashboardPage() {
                 <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <FileText size={16} style={{ color: 'var(--accent-primary)' }} /> Parsed Resume Profile
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, fontSize: 13 }}>
                   {parsedResume.name && <div><span style={{ color: 'var(--text-muted)' }}>Name:</span> <strong>{parsedResume.name}</strong></div>}
                   {parsedResume.experience_years > 0 && <div><span style={{ color: 'var(--text-muted)' }}>Experience:</span> <strong>{parsedResume.experience_years} years</strong></div>}
                   {parsedResume.experience_level && <div><span style={{ color: 'var(--text-muted)' }}>Level:</span> <strong>{parsedResume.experience_level}</strong></div>}
