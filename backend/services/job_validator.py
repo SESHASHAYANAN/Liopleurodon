@@ -20,59 +20,54 @@ INDIA_CITIES = {
     "nashik", "rajkot", "jodhpur", "raipur", "amritsar", "navi mumbai",
     "thane", "faridabad", "ghaziabad", "meerut", "greater noida",
     "new delhi", "old delhi", "east delhi", "west delhi",
+    # Indian states / regions (appear in Adzuna location fields)
+    "karnataka", "maharashtra", "tamil nadu", "telangana", "andhra pradesh",
+    "west bengal", "rajasthan", "uttar pradesh", "gujarat", "kerala",
+    "madhya pradesh", "haryana", "punjab", "bihar", "odisha",
+    "india",
 }
 
-# ── Foreign markers — if ANY of these appear in title, the job is NOT India ─
-FOREIGN_COUNTRY_MARKERS = {
-    # Country names
-    "uk", "united kingdom", "us", "usa", "united states", "america",
-    "canada", "australia", "germany", "france", "netherlands", "ireland",
-    "switzerland", "sweden", "norway", "denmark", "finland", "japan",
-    "singapore", "brazil", "spain", "italy", "poland", "czech",
-    "austria", "belgium", "new zealand", "israel", "uae", "dubai",
-    "qatar", "saudi", "south korea", "mexico", "portugal",
-    # Major foreign cities
+# ── Foreign markers — ONLY check in job TITLE, not in URLs ────────────────
+FOREIGN_TITLE_MARKERS = {
+    # Country names that appear in titles like "Software Engineer - UK"
+    "uk", "united kingdom", "usa", "united states",
+    "canada", "australia", "germany", "france", "netherlands",
+    "switzerland", "sweden", "japan", "singapore", "brazil",
+    "spain", "italy", "new zealand", "israel",
+}
+
+# ── Foreign CITY markers — only for title checks ─────────────────────────
+FOREIGN_CITY_MARKERS = {
     "london", "new york", "san francisco", "los angeles", "seattle",
     "austin", "boston", "chicago", "toronto", "vancouver", "montreal",
     "sydney", "melbourne", "berlin", "munich", "amsterdam", "dublin",
-    "paris", "zurich", "stockholm", "oslo", "copenhagen", "helsinki",
-    "tokyo", "barcelona", "madrid", "milan", "rome", "prague",
-    "warsaw", "lisbon", "vienna", "brussels", "tel aviv",
+    "paris", "zurich", "tokyo",
 }
-
-# ── Currency / salary signals for non-India ───────────────────────────────
-NON_INDIA_SALARY_SIGNALS = {"gbp", "£", "eur", "€", "usd", "$", "aud", "cad", "sgd", "chf"}
 
 # ── Experience Level Classification ───────────────────────────────────────
 
-# Patterns that indicate SENIOR-level roles (high priority — checked first)
-SENIOR_PATTERNS = [
-    r'\bsenior\b', r'\bsr\.?\s', r'\blead\b', r'\bprincipal\b',
-    r'\bstaff\b', r'\barchitect\b', r'\bdirector\b', r'\bhead\s+of\b',
-    r'\bvp\b', r'\bchief\b', r'\bmanager\b', r'\bexecutive\b',
-]
-
-# Patterns that indicate LEAD-level roles
-LEAD_PATTERNS = [
-    r'\blead\b', r'\bteam\s*lead\b', r'\btech\s*lead\b',
-    r'\bengineering\s*lead\b', r'\bmanager\b',
-]
-
-# Patterns that indicate STAFF-level roles
 STAFF_PATTERNS = [
     r'\bstaff\b', r'\bprincipal\b', r'\bdistinguished\b',
     r'\bvp\b', r'\bdirector\b', r'\bchief\b', r'\bhead\s+of\b',
     r'\bfellow\b',
 ]
 
-# Patterns that indicate JUNIOR-level roles
+LEAD_PATTERNS = [
+    r'\blead\b', r'\bteam\s*lead\b', r'\btech\s*lead\b',
+    r'\bengineering\s*lead\b', r'\bmanager\b',
+]
+
+SENIOR_PATTERNS = [
+    r'\bsenior\b', r'\bsr\.?\s', r'\bsr$',
+    r'\barchitect\b', r'\bexecutive\b',
+]
+
 JUNIOR_PATTERNS = [
     r'\bjunior\b', r'\bjr\.?\s', r'\bjr$',
     r'\bassociate\b', r'\bentry[\s-]?level\b', r'\bgraduate\b',
     r'\bnew\s*grad\b', r'\bfresher\b',
 ]
 
-# Patterns that indicate INTERN-level roles
 INTERN_PATTERNS = [
     r'\bintern\b', r'\binternship\b', r'\btrainee\b',
     r'\bapprentice\b', r'\bco-?op\b',
@@ -82,29 +77,27 @@ INTERN_PATTERNS = [
 def classify_experience_level(title: str, description: str = "") -> str:
     """
     Classify experience level strictly from the job TITLE.
-    Title is the primary signal — description is secondary.
-    
     Priority order: intern > staff > lead > senior > junior > mid (default).
     """
     t = title.lower().strip()
     
-    # 1. Intern — highest priority (internship is a specific category)
+    # 1. Intern — highest priority
     if any(re.search(p, t) for p in INTERN_PATTERNS):
         return "intern"
     
-    # 2. Staff/Principal/VP/Director — very senior
+    # 2. Staff/Principal/VP/Director
     if any(re.search(p, t) for p in STAFF_PATTERNS):
         return "staff"
     
-    # 3. Lead — team/tech/engineering lead
+    # 3. Lead
     if any(re.search(p, t) for p in LEAD_PATTERNS):
         return "lead"
     
-    # 4. Senior — "senior", "sr.", etc.
+    # 4. Senior
     if any(re.search(p, t) for p in SENIOR_PATTERNS):
         return "senior"
     
-    # 5. Junior — "junior", "jr.", "associate", "entry-level", "graduate", "fresher"
+    # 5. Junior
     if any(re.search(p, t) for p in JUNIOR_PATTERNS):
         return "junior"
     
@@ -115,65 +108,57 @@ def classify_experience_level(title: str, description: str = "") -> str:
 def validate_india_job(job: dict) -> bool:
     """
     Validate that a job tagged as India is ACTUALLY an India job.
-    Returns False if any signal indicates it's a foreign job.
+    Returns False ONLY if there's a POSITIVE foreign signal in the TITLE.
+    
+    We only check the title for foreign country/city names — NOT URLs,
+    because Adzuna uses .co.uk domains for all countries including India.
     """
     title = (job.get("title") or "").lower()
-    description = (job.get("description") or "").lower()
-    location_city = (job.get("location_city") or "").lower()
-    apply_url = (job.get("apply_url") or "").lower()
     salary_currency = (job.get("salary_currency") or "").lower()
     
-    # 1. Check title for foreign country/city markers
+    # 1. Check title for foreign country markers
     #    e.g., "Technical Account Manager - UK" → NOT India
-    for marker in FOREIGN_COUNTRY_MARKERS:
-        # Match whole word or at end after " - " or in parentheses
+    for marker in FOREIGN_TITLE_MARKERS:
         patterns = [
-            rf'\b{re.escape(marker)}\b',
-            rf'\(\s*{re.escape(marker)}\s*\)',
-            rf'-\s*{re.escape(marker)}\s*$',
+            rf'\b{re.escape(marker)}\b',           # whole word
+            rf'\(\s*{re.escape(marker)}\s*\)',       # in parentheses
+            rf'-\s*{re.escape(marker)}\s*$',         # after dash at end
         ]
         for pattern in patterns:
             if re.search(pattern, title):
                 return False
     
-    # 2. Check salary currency — GBP, EUR, USD = not India
-    if salary_currency in NON_INDIA_SALARY_SIGNALS:
-        return False
-    
-    # 3. Check description for strong non-India signals
-    #    Look for salary in £, €, $ format
-    if re.search(r'[£€]\s*\d', description[:500]):
-        return False
-    
-    # 4. Check apply_url for foreign job board domains
-    foreign_domains = [".co.uk", "uk.indeed", "indeed.co.uk", ".de/", ".fr/"]
-    if any(d in apply_url for d in foreign_domains):
-        return False
-    
-    # 5. Check location_city — if it's a known foreign city
-    for marker in FOREIGN_COUNTRY_MARKERS:
-        if marker in location_city:
+    # 2. Check title for foreign city markers
+    for marker in FOREIGN_CITY_MARKERS:
+        if re.search(rf'\b{re.escape(marker)}\b', title):
             return False
     
-    # 6. Positive signal: known Indian city
-    for city in INDIA_CITIES:
-        if city in location_city:
-            return True
+    # 3. Salary in GBP/EUR = not India (but USD is OK — many India jobs list USD)
+    if salary_currency in ("gbp", "eur", "chf", "aud", "cad", "sgd"):
+        return False
     
-    # 7. If location_city is empty or generic, it's ambiguous — allow it
+    # 4. Description has £ or € salary = not India
+    desc = (job.get("description") or "").lower()[:500]
+    if re.search(r'[£€]\s*\d', desc):
+        return False
+    
+    # 5. If sourced from Adzuna-IN, trust it (they queried the /in/ endpoint)
+    sources = job.get("source_platforms") or []
+    if any("adzuna-in" in s.lower() for s in sources):
+        return True
+    
+    # 6. Default: allow (no foreign signals found)
     return True
 
 
-def validate_job_data_quality(job: dict) -> tuple[bool, str]:
+def validate_job_data_quality(job: dict) -> tuple:
     """
     Validate overall job data quality. Returns (is_valid, reason).
-    Call this BEFORE inserting any job into the database.
     """
     title = (job.get("title") or "").strip()
     company = (job.get("company_name") or "").strip()
     apply_url = (job.get("apply_url") or "").strip()
     
-    # Basic required fields
     if not title or len(title) < 5:
         return False, "title too short"
     if not company or len(company) < 2:
@@ -181,22 +166,21 @@ def validate_job_data_quality(job: dict) -> tuple[bool, str]:
     if not apply_url or not apply_url.startswith("http"):
         return False, "invalid apply_url"
     
-    # Reject fake/test jobs
-    fake_markers = ["test", "mock", "placeholder", "dummy", "sample", "example"]
-    if any(m in title.lower() for m in fake_markers):
+    # Reject fake/test jobs — but be careful not to reject "QA Test Engineer"
+    title_lower = title.lower()
+    if any(title_lower.startswith(m) for m in ["test ", "mock ", "dummy ", "placeholder "]):
         return False, "fake/test job"
     
     # Country-location cross-validation
     country = (job.get("location_country") or "").lower()
     if country in ("india", "in"):
         if not validate_india_job(job):
-            return False, "location mismatch: tagged India but contains foreign signals"
+            return False, "location mismatch: foreign signals in title"
     
-    # Experience level must match title
+    # Auto-correct experience level
     stored_exp = job.get("experience_level", "")
-    correct_exp = classify_experience_level(title, job.get("description", ""))
+    correct_exp = classify_experience_level(title)
     if stored_exp and stored_exp != correct_exp:
-        # Auto-correct instead of rejecting
         job["experience_level"] = correct_exp
     
     return True, "ok"
@@ -205,19 +189,17 @@ def validate_job_data_quality(job: dict) -> tuple[bool, str]:
 def sanitize_job_before_insert(job: dict) -> dict:
     """
     Sanitize and auto-correct fields before database insertion.
-    This ensures experience_level, location, etc. are always correct.
     """
     title = job.get("title", "")
     desc = job.get("description", "")
     
-    # 1. Always re-classify experience level from title (never trust source data)
+    # 1. Always re-classify experience level from title
     job["experience_level"] = classify_experience_level(title, desc)
     
     # 2. Validate India location if tagged as India
     country = (job.get("location_country") or "").lower()
     if country in ("india", "in"):
         if not validate_india_job(job):
-            # Foreign job wrongly tagged as India — clear location
             job["location_country"] = None
             job["location_city"] = None
     
