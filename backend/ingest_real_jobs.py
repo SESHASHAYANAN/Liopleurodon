@@ -22,6 +22,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 from services.ats_detector import detect_ats_from_url, COMPANY_ATS_MAP  # noqa: E402
+from services.job_validator import (  # noqa: E402
+    classify_experience_level,
+    validate_india_job,
+    sanitize_job_before_insert,
+    validate_job_data_quality,
+)
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -50,16 +56,8 @@ def generate_dedup_hash(company, title, location, apply_url="", external_id=""):
     return hashlib.sha256("|".join(parts).encode()).hexdigest()
 
 def classify_exp(title: str) -> str:
-    t = title.lower()
-    if any(k in t for k in ["intern", "fresher", "trainee"]):
-        return "intern"
-    if any(k in t for k in ["junior", "jr", "associate", "entry level", "graduate"]):
-        return "junior"
-    if any(k in t for k in ["senior", "sr", "lead", "principal", "architect"]):
-        return "senior"
-    if any(k in t for k in ["staff", "vp", "director", "head of", "chief"]):
-        return "staff"
-    return "mid"
+    """Classify experience level strictly from title. Delegates to centralized validator."""
+    return classify_experience_level(title)
 
 def classify_job_type(title: str, desc: str) -> str:
     text = (title + " " + desc).lower()
@@ -168,13 +166,12 @@ async def fetch_adzuna_india(client, queries):
                     location = (item.get("location") or {}).get("display_name", "India")
                     desc = first_sentence(item.get("description", ""))
                     
-                    # Force tag if query explicitly requested it
+                    # NEVER override experience level from query — always use title
                     forced_remote = "remote" if "remote" in q.lower() else classify_remote(title + " " + location + " " + desc)
                     forced_job_type = "internship" if "intern" in q.lower() or "fresher" in q.lower() else classify_job_type(title, desc)
-                    forced_exp = "junior" if "junior" in q.lower() or "fresher" in q.lower() or "new grad" in q.lower() else classify_exp(title)
                     forced_stealth = "stealth" in q.lower() or "stealth" in classify_company_type(company, desc)
                     
-                    jobs.append({
+                    job_data = {
                         "title": title, "company_name": company,
                         "location_city": location,
                         "location_country": "India",
@@ -183,12 +180,17 @@ async def fetch_adzuna_india(client, queries):
                         "posted_date": item.get("created", ""),
                         "source_platforms": ["Adzuna-IN"],
                         "remote_type": forced_remote,
-                        "experience_level": forced_exp,
+                        "experience_level": classify_experience_level(title),
                         "job_type": forced_job_type,
                         "company_type": "stealth" if forced_stealth else classify_company_type(company, desc),
                         "visa_sponsorship": detect_visa(desc),
                         "relocation_support": detect_relocation(desc),
-                    })
+                    }
+                    
+                    # Validate India location — reject if foreign signals detected
+                    if validate_india_job(job_data):
+                        jobs.append(job_data)
+                    # else: silently skip — foreign job from Adzuna India endpoint
             except Exception as e:
                 print(f"  [Adzuna-IN/{q}/p{page}] Error: {e}")
                 break
@@ -347,6 +349,15 @@ async def verify_and_insert(raw_jobs):
     for job in raw_jobs:
         # 1. Validation
         if not is_valid_job(job):
+            skipped_invalid += 1
+            continue
+
+        # 1b. Sanitize — re-classify experience level, validate location
+        job = sanitize_job_before_insert(job)
+        
+        # 1c. Quality check
+        is_ok, reason = validate_job_data_quality(job)
+        if not is_ok:
             skipped_invalid += 1
             continue
 

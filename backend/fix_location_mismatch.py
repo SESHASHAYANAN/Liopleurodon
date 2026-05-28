@@ -25,6 +25,8 @@ load_dotenv()
 
 db = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
 
+from services.job_validator import classify_experience_level, validate_india_job  # noqa: E402
+
 # Sources that are genuinely India-based
 INDIA_SOURCES = {
     "Adzuna-IN", "Adzuna-IN-Junior", "Instahyre", "Karkidi",
@@ -53,14 +55,8 @@ def dedup_hash(company, title, location, url=""):
 
 
 def classify_exp(title: str) -> str:
-    t = title.lower()
-    if any(k in t for k in ["intern", "fresher", "trainee"]):
-        return "intern"
-    if any(k in t for k in ["junior", "jr ", "associate", "entry level", "graduate"]):
-        return "junior"
-    if any(k in t for k in ["senior", "sr ", "lead", "principal", "architect", "staff"]):
-        return "senior"
-    return "mid"
+    """Delegates to centralized validator."""
+    return classify_experience_level(title)
 
 
 def classify_job_type(title: str, desc: str) -> str:

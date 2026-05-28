@@ -7,6 +7,7 @@ Liopleurodon — Job Refresh Script
 
 import asyncio, sys, os, hashlib, re, random
 from services.ats_detector import detect_ats_from_url, COMPANY_ATS_MAP
+from services.job_validator import classify_experience_level, validate_india_job, sanitize_job_before_insert
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -40,12 +41,8 @@ def dhash(company, title, city):
     return hashlib.sha256("|".join([ntxt(company), ntxt(title), ntxt(city or ""), ""]).encode()).hexdigest()
 
 def classify_exp(title):
-    t = title.lower()
-    if any(k in t for k in ["intern", "fresher", "trainee"]): return "intern"
-    if any(k in t for k in ["junior", "jr.", "associate", "entry level", "graduate", "new grad"]): return "junior"
-    if any(k in t for k in ["senior", "sr.", "lead", "principal", "architect"]): return "senior"
-    if any(k in t for k in ["staff", "vp", "director", "head of", "chief"]): return "staff"
-    return "mid"
+    """Delegates to centralized validator for consistent classification."""
+    return classify_experience_level(title)
 
 def classify_remote(text):
     if not text: return "onsite"
