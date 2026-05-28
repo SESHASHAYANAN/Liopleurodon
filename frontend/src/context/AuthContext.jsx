@@ -35,11 +35,17 @@ export function AuthProvider({ children }) {
   };
 
   const signInWithGoogle = async () => {
-    return supabase.auth.signInWithOAuth({ provider: 'google' });
+    return supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
   };
 
   const signInWithGitHub = async () => {
-    return supabase.auth.signInWithOAuth({ provider: 'github' });
+    return supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
   };
 
   return (
