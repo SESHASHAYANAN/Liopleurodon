@@ -6,6 +6,7 @@ Liopleurodon — Job Refresh Script
 """
 
 import asyncio, sys, os, hashlib, re, random
+from services.ats_detector import detect_ats_from_url, COMPANY_ATS_MAP
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -331,6 +332,12 @@ def insert_scraped(raw_jobs):
             record["salary_currency"] = j["salary_currency"]
             record["salary_period"] = "yearly"
 
+        # ATS Detection
+        ats = detect_ats_from_url(j.get("url", ""))
+        if not ats and j.get("company"):
+            ats = COMPANY_ATS_MAP.get(j["company"].lower())
+        record["ats_detected"] = ats or "Unknown ATS"
+
         try:
             db.table("jobs").upsert(record, on_conflict="dedup_hash").execute()
             inserted += 1
@@ -338,48 +345,21 @@ def insert_scraped(raw_jobs):
                 print(f"    Inserted {inserted}...", flush=True)
         except Exception as e:
             err = str(e)
-            if "duplicate" not in err.lower() and "unique" not in err.lower():
+            if "ats_detected" in err.lower() and "column" in err.lower():
+                record.pop("ats_detected", None)
+                try:
+                    db.table("jobs").upsert(record, on_conflict="dedup_hash").execute()
+                    inserted += 1
+                except Exception:
+                    skipped += 1
+            elif "duplicate" not in err.lower() and "unique" not in err.lower():
                 if skipped < 3:
                     print(f"    [ERR] {j['title'][:40]}: {err[:60]}")
-            skipped += 1
+                skipped += 1
+            else:
+                skipped += 1
 
     print(f"  Inserted: {inserted}, Skipped: {skipped}")
-    return inserted
-
-
-# ══════════════════════════════════════════════════
-# STEP 4: Backfill with generated jobs
-# ══════════════════════════════════════════════════
-def backfill_generated(needed):
-    """Import generate_jobs from expand_jobs and fill remaining gap."""
-    print(f"\n[STEP 4] Backfilling {needed} jobs with generated entries...")
-    from expand_jobs import generate_jobs
-    now = datetime.now(timezone.utc).isoformat()
-
-    jobs = generate_jobs(needed + 200)
-    random.seed()  # re-seed for fresh random posted_dates
-    inserted = 0
-
-    for j in jobs:
-        if inserted >= needed:
-            break
-        # Set fresh posted_date within last 14 days
-        days_ago = random.randint(0, 14)
-        j["posted_date"] = (datetime.now(timezone.utc) - timedelta(days=days_ago)).isoformat()
-        j["created_at"] = now
-        j["updated_at"] = now
-        j["apply_url"] = f"https://careers.{j['company_name'].lower().replace(' ', '').replace('&', '')}.com/job/{j['dedup_hash'][:8]}"
-        j["source_platforms"] = ["IndiaAI-Curated-Real"]
-
-        try:
-            db.table("jobs").upsert(j, on_conflict="dedup_hash").execute()
-            inserted += 1
-            if inserted % 100 == 0:
-                print(f"    Generated {inserted}/{needed}...", flush=True)
-        except:
-            pass
-
-    print(f"  Backfilled {inserted} generated jobs.")
     return inserted
 
 
@@ -450,12 +430,6 @@ async def main():
     scraped_inserted = insert_scraped(all_scraped)
     after_scrape = count_active()
     print(f"  Active after scrape: {after_scrape}")
-
-    # Step 4: Backfill if needed
-    backfilled = 0
-    if after_scrape < TARGET:
-        needed = TARGET - after_scrape
-        backfilled = backfill_generated(needed)
 
     final = count_active()
     print(f"\n{'=' * 60}")

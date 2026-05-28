@@ -11,7 +11,10 @@ class Settings(BaseSettings):
     # App
     APP_NAME: str = "Liopleurodon"
     DEBUG: bool = True
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001"
+    CORS_ORIGINS: str = (
+        "http://localhost:3000,http://localhost:3001,"
+        "http://127.0.0.1:3000,http://127.0.0.1:3001"
+    )
 
     # Supabase
     SUPABASE_URL: str = ""
@@ -34,10 +37,10 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = ""
     SAMBANOVA_API_KEY: str = ""
 
-    # Algolia
+    # Algolia (optional search index)
     ALGOLIA_APP_ID: str = ""
     ALGOLIA_API_KEY: str = ""
-    ALGOLIA_INDEX_NAME: str = "jobhacker_jobs"
+    ALGOLIA_INDEX_NAME: str = "liopleurodon_jobs"
 
     class Config:
         env_file = "../.env"

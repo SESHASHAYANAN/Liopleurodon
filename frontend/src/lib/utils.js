@@ -1,11 +1,12 @@
 export function formatSalary(min, max, currency = 'USD') {
+  const symbol = currency === 'INR' ? '₹' : '$';
   const fmt = (n) => {
     if (n >= 1000) return `${Math.round(n / 1000)}K`;
     return n?.toString() || '';
   };
-  if (min && max) return `$${fmt(min)} – $${fmt(max)}`;
-  if (min) return `$${fmt(min)}+`;
-  if (max) return `Up to $${fmt(max)}`;
+  if (min && max) return `${symbol}${fmt(min)} – ${symbol}${fmt(max)}`;
+  if (min) return `${symbol}${fmt(min)}+`;
+  if (max) return `Up to ${symbol}${fmt(max)}`;
   return 'Competitive';
 }
 
@@ -45,25 +46,52 @@ export const EXPERIENCE_COLORS = {
 };
 
 export const SOURCE_ICONS = {
+  // API sources
   JSearch: '🔍',
   SerpApi: '🌐',
   Adzuna: '📊',
+  'Adzuna-IN': '📊',
+  'Adzuna-IN-Junior': '📊',
   TheirStack: '🏗️',
   Apify: '🤖',
   'The Muse': '🎭',
   Findwork: '💼',
+  // YC
   YC: '🟧',
-  Wellfound: '😇',
-  LinkedIn: '🔗',
-  Seed: '⭐',
-  WebScraper: '🕷️',
   'YC-WATS': '🟧',
   'YC-Jobs': '🟧',
   Simplify: '📋',
+  // Startup job boards
+  Wellfound: '😇',
+  'Wellfound-IN': '😇',
   ArcDev: '🌐',
+  // Remote boards
+  Remotive: '🌍',
+  'Remotive-AI': '🤖',
+  RemoteOK: '🌍',
+  Jobicy: '💡',
+  Himalayas: '🏔️',
+  HasJob: '🔎',
+  // Indian platforms
+  Karkidi: '🇮🇳',
+  Instahyre: '🇮🇳',
+  Internshala: '🎓',
+  Freshersworld: '🎓',
+  CutShort: '✂️',
+  'Naukri-Startups': '🇮🇳',
+  'Shine-Startups': '✨',
+  TimesJobs: '📰',
+  // AI / specialised
+  'AI-Jobs': '🤖',
+  // Web3
   'Web3-DS': '🔮',
   'Web3-Remote': '🔮',
   'Web3-OKX': '🔮',
+  // Other
+  LinkedIn: '🔗',
   MigrateMate: '✈️',
   Arbeitnow: '🇪🇺',
+  Seed: '⭐',
+  WebScraper: '🕷️',
 };
+

@@ -233,7 +233,7 @@ def _clean_for_db(job: dict) -> dict:
         "benefits", "skills_required", "skills_preferred", "tech_stack",
         "apply_url", "easy_apply", "source_platforms", "posted_date",
         "expiry_date", "is_stealth", "is_active", "dedup_hash",
-        "is_featured", "last_seen_at",
+        "is_featured", "last_seen_at", "ats_detected",
     ]
 
     for field in db_fields:

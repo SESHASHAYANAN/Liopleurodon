@@ -86,6 +86,7 @@ def tag_job_with_vc_info(job: dict) -> dict:
         job["is_stealth"] = info["is_stealth"]
     return job
 
+
 def tag_job_perks(job: dict) -> dict:
     title = str(job.get("title", "")).lower()
     description = str(job.get("description", "")).lower()

@@ -86,22 +86,33 @@ export async function matchResumeWithPDF(file, limit = 20) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('limit', limit.toString());
+  return fetchApiFormData('/api/ai/match-resume-pdf', formData);
+}
 
-  const url = `${API_URL}/api/ai/match-resume-pdf`;
+export async function matchJobsWithKeywords(params) {
+  return fetchApi('/api/ai/keyword-match', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+/**
+ * POST multipart/form-data with the same retry logic as fetchApi.
+ * Used for file-upload endpoints where Content-Type must not be set manually.
+ */
+async function fetchApiFormData(endpoint, formData, maxRetries = 3) {
+  const url = `${API_URL}${endpoint}`;
   let lastError;
 
-  for (let attempt = 0; attempt <= 3; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        body: formData,
-      });
+      const res = await fetch(url, { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       return res.json();
     } catch (err) {
       lastError = err;
       const isNetworkError = err.message === 'Failed to fetch' || err.name === 'TypeError';
-      if (isNetworkError && attempt < 3) {
+      if (isNetworkError && attempt < maxRetries) {
         const delay = Math.pow(2, attempt) * 1000;
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
@@ -112,9 +123,3 @@ export async function matchResumeWithPDF(file, limit = 20) {
   throw lastError;
 }
 
-export async function matchJobsWithKeywords(params) {
-  return fetchApi('/api/ai/keyword-match', {
-    method: 'POST',
-    body: JSON.stringify(params),
-  });
-}

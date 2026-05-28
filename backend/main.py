@@ -17,14 +17,6 @@ scheduler = AsyncIOScheduler()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle."""
-    # ─── Inject Seed Data on Startup ───────────────────────────
-    try:
-        from seed_data import inject_seed_data
-        await inject_seed_data()
-        print("[Liopleurodon] Seed data injected successfully.")
-    except Exception as e:
-        print(f"[Liopleurodon] Seed data injection error (non-fatal): {e}")
-
     # ─── Cleanup expired jobs on startup ───────────────────────
     try:
         from scrapers.web_scraper import mark_stale_jobs
