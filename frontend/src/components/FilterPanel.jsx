@@ -236,7 +236,7 @@ export default function FilterPanel({ show, onClose }) {
               }}
             />
             {/* Slide-in drawer */}
-            <motion.aside
+            <motion.div
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 350 }}
               style={{
@@ -249,7 +249,7 @@ export default function FilterPanel({ show, onClose }) {
               }}
             >
               {filterContent}
-            </motion.aside>
+            </motion.div>
           </>
         )}
       </AnimatePresence>

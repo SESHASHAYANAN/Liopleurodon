@@ -144,12 +144,12 @@ export default function DashboardPage() {
   };
 
   if (authLoading) {
-    return (<><Navbar onToggleFilters={() => {}} /><div style={{ textAlign: 'center', padding: 80, color: 'var(--text-muted)' }}>Loading...</div></>);
+    return (<><Navbar onToggleFilters={() => {}} hideFilters /><div style={{ textAlign: 'center', padding: 80, color: 'var(--text-muted)' }}>Loading...</div></>);
   }
 
   return (
     <>
-      <Navbar onToggleFilters={() => {}} />
+      <Navbar onToggleFilters={() => {}} hideFilters />
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>Dashboard</h1>

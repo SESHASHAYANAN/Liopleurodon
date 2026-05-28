@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useFilters } from '@/context/FilterContext';
 import AuthModal from './AuthModal';
 
-export default function Navbar({ onToggleFilters, showFilters }) {
+export default function Navbar({ onToggleFilters, showFilters, hideFilters }) {
   const { user, signOut } = useAuth();
   const { filters, updateFilter } = useFilters();
   const [searchValue, setSearchValue] = useState(filters.q || '');
@@ -92,14 +92,16 @@ export default function Navbar({ onToggleFilters, showFilters }) {
             {mobileSearchOpen ? <X size={20} /> : <Search size={20} />}
           </button>
 
-          <button
-            className="btn btn-ghost"
-            onClick={onToggleFilters}
-            style={{ position: 'relative', padding: '8px 12px' }}
-          >
-            <SlidersHorizontal size={18} />
-            <span className="navbar-filter-text" style={{ fontSize: 13 }}>Filters</span>
-          </button>
+          {!hideFilters && (
+            <button
+              className="btn btn-ghost"
+              onClick={onToggleFilters}
+              style={{ position: 'relative', padding: '8px 12px' }}
+            >
+              <SlidersHorizontal size={18} />
+              <span className="navbar-filter-text" style={{ fontSize: 13 }}>Filters</span>
+            </button>
+          )}
 
           {user ? (
             <div style={{ position: 'relative' }}>
@@ -123,11 +125,12 @@ export default function Navbar({ onToggleFilters, showFilters }) {
                     style={{
                       position: 'absolute', right: 0, top: '100%', marginTop: 8,
                       background: 'var(--bg-surface)', border: '1px solid var(--border-color)',
-                      borderRadius: 12, padding: 8, minWidth: 200,
+                      borderRadius: 12, padding: 8, minWidth: 200, maxWidth: '90vw',
                       boxShadow: 'var(--shadow-card)',
+                      zIndex: 100,
                     }}
                   >
-                    <div style={{ padding: '8px 12px', color: 'var(--text-muted)', fontSize: 13 }}>
+                    <div style={{ padding: '8px 12px', color: 'var(--text-muted)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {user.email}
                     </div>
                     <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '4px 0' }} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import FilterPanel from '@/components/FilterPanel';
 import JobFeed from '@/components/JobFeed';
@@ -8,6 +8,12 @@ import TrendingSidebar from '@/components/TrendingSidebar';
 
 export default function Home() {
   const [showFilters, setShowFilters] = useState(true);
+
+  useEffect(() => {
+    if (window.innerWidth <= 768) {
+      setShowFilters(false);
+    }
+  }, []);
 
   return (
     <>
