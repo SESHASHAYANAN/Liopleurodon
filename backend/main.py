@@ -34,6 +34,15 @@ async def lifespan(app: FastAPI):
         id="scrape_all",
     )
 
+    # ─── India job scale-up (every 40 minutes → target 3000+) ──
+    from scale_india_jobs import run_india_scale
+    scheduler.add_job(
+        run_india_scale,
+        "interval",
+        minutes=40,
+        id="india_scale",
+    )
+
     # ─── Web scrapers (every 10 minutes) ───────────────────────
     from scrapers.web_scraper import run_web_scrape, mark_stale_jobs
     scheduler.add_job(
@@ -52,7 +61,7 @@ async def lifespan(app: FastAPI):
     )
 
     scheduler.start()
-    print("[Liopleurodon] Backend started! API scrapers: 1h, Web scrapers: 10min.")
+    print("[Liopleurodon] Backend started! API scrapers: 1h, India scale: 40min, Web scrapers: 10min.")
     yield
     scheduler.shutdown()
     print("[Liopleurodon] Backend shutting down.")
