@@ -140,31 +140,75 @@ The platform splits responsibilities between a client-heavy Next.js dashboard, a
 </p>
 
 <!-- ARCHITECTURE DIAGRAM BLOCK -->
-<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-<div style="text-align: center; font-family: monospace; font-size: 12px; color: #475569; overflow-x: auto; white-space: pre; line-height: 1.4;">
-┌──────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                    Next.js Frontend                                          │
-│                    (React 19 / Tailwind CSS 4 / Lucide / Framer Motion)                      │
-└──────────────────────────────┬──────────────────────────────▲────────────────────────────────┘
-                               │ HTTP REST Requests           │ Client Auth & Direct DB Query
-                               ▼ (Port 8000)                  │ (Supabase Client SDK)
-┌─────────────────────────────────────────────────────────────┴────────────────────────────────┐
-│                                    FastAPI Gateway                                           │
-│                     (Python 3.10+ / Async Tasks / Uvicorn Server)                            │
-├──────────────────────────────┬──────────────────────────────┬────────────────────────────────┤
-│    Scrapers Pipeline         │      AI Parser/Matcher       │     Task Scheduler             │
-│    (BeautifulSoup / httpx)   │     (Groq / OpenRouter)      │     (APScheduler Loop)         │
-└──────────────┬───────────────┴──────────────┬───────────────┴──────────────┬─────────────────┘
-               │ Write Scraped Jobs           │ Read/Embed Vectors           │ Check Alerts & Status
-               ▼                              ▼                              ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   Supabase Database                                          │
-│                     (PostgreSQL DB / pgvector Embeddings / RLS Policies)                     │
-└──────────────────────────────────────────────────────────────────────────────────────────────┘
+<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+<table style="width: 100%; border-collapse: collapse; border: none; font-size: 13.5px;">
+<tr>
+<td style="padding: 0 0 12px 0; text-align: center;">
+<div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1); border: 1px solid #2563eb; text-align: left;">
+<div style="font-weight: 800; font-size: 15px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+<span>🌐</span> NEXT.JS CLIENT FRONTEND (App Router)
 </div>
-<div style="text-align: center; margin-top: 12px; font-size: 12px; color: #64748b; font-style: italic;">
-Figure 4.1: High-Level Client-Server Architecture & Communication Lines
+<div style="font-family: monospace; font-size: 11px; opacity: 0.9; margin-bottom: 8px;">
+React 19 | Tailwind CSS v4 | Framer Motion | Lucide Icons
 </div>
+<div style="font-size: 13px; line-height: 1.5; opacity: 0.95;">
+Handles user interactions, responsive job filters, bookmarks state, visual job board dashboards, and drag-and-drop resume scanner panels.
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td style="padding: 0 0 12px 0; text-align: center; font-size: 18px; color: #94a3b8; font-weight: bold; font-family: monospace;">
+│<br>
+▼ REST APIs (JSON) / Direct SDK Authentication<br>
+▲
+</td>
+</tr>
+<tr>
+<td style="padding: 0 0 12px 0; text-align: center;">
+<div style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); color: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1); border: 1px solid #059669; text-align: left;">
+<div style="font-weight: 800; font-size: 15px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+<span>⚙️</span> FASTAPI GATEWAY & WORKER PROCESSORS
+</div>
+<div style="font-family: monospace; font-size: 11px; opacity: 0.9; margin-bottom: 8px;">
+Python 3.10+ | APScheduler Daemon | BeautifulSoup4 | HTTPX Async
+</div>
+<div style="font-size: 13px; line-height: 1.5; opacity: 0.95; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+<div>
+<strong>⚡ Web Scrapers Pipeline</strong><br>
+Direct Beautiful Soup crawls & API ingestion routines running on 10+ major developer sources.
+</div>
+<div>
+<strong>🤖 AI Router & Matching</strong><br>
+Resume parsing via PyPDF2, Llama-3.3 score evaluations, and semantic matching matrices.
+</div>
+</div>
+</div>
+</td>
+</tr>
+<tr>
+<td style="padding: 0 0 12px 0; text-align: center; font-size: 18px; color: #94a3b8; font-weight: bold; font-family: monospace;">
+│<br>
+▼ PostgreSQL Transactions / Vector Embeddings<br>
+▲
+</td>
+</tr>
+<tr>
+<td style="padding: 0;">
+<div style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 4px 6px -1px rgba(6, 180, 212, 0.1); border: 1px solid #0891b2; text-align: left;">
+<div style="font-weight: 800; font-size: 15px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+<span>💾</span> SUPABASE CLOUD DATABASE
+</div>
+<div style="font-family: monospace; font-size: 11px; opacity: 0.9; margin-bottom: 8px;">
+PostgreSQL | pgvector Indexes | Row Level Security (RLS)
+</div>
+<div style="font-size: 13px; line-height: 1.5; opacity: 0.95;">
+Persists normalized job tables, tracks bookmarks, schedules user email/web notifications, handles authentication tokens, and queries semantic matches using vector distances.
+</div>
+</div>
+</td>
+</tr>
+</table>
 </div>
 
 <!-- TECHNOLOGY STACK TABLE -->
@@ -612,43 +656,68 @@ For production, host the Next.js app on Vercel and the FastAPI backend on Render
 Review the layout of the folders and files below to understand the components and structure of the repository:
 </p>
 
-<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-family: 'Fira Code', monospace; font-size: 13px; color: #334155; overflow-x: auto; line-height: 1.45;">
-Liopleurodon/
-├── backend/                  # FastAPI Application
-│   ├── main.py               # API Gateway & Scheduler Initialization
-│   ├── config.py             # Settings using Pydantic Settings
-│   ├── database.py           # Supabase DB Admin and Public Clients
-│   ├── refresh_jobs.py       # Scraper Ingestion Coordination
-│   ├── requirements.txt      # Backend Python Dependencies
-│   ├── routers/              # API Endpoint Routes
-│   │   ├── ai.py             # AI Matches, CV Parsers, and Quality Scoring
-│   │   ├── alerts.py         # Subscriptions & Alerts Configurations
-│   │   ├── jobs.py           # Search, Filtering, and Pagination Routes
-│   │   └── users.py          # Bookmarks and Applications State Mappings
-│   ├── scrapers/             # Custom Extraction Scripts
-│   │   ├── base.py           # Abstract Base Class for Ingestion
-│   │   ├── india_startups.py # Custom Indian Startup Job Board Scraper
-│   │   ├── web_scraper.py    # BeautifulSoup parsers & expired jobs logic
-│   │   ├── yc_jobs.py        # Algolia-based Y-Combinator Crawler
-│   │   └── adzuna.py         # Adzuna REST Aggregator Integration
-│   └── services/             # Core Backend Processing
-│       ├── ai_service.py     # Groq & OpenRouter REST Call Mapping
-│       └── deduplication.py  # SHA-256 Hashing Algorithms
-├── frontend/                 # Next.js Application
-│   ├── src/
-│   │   ├── app/              # Routes & Navigation Mappings
-│   │   │   ├── layout.js     # Shared App Shell & Global Configs
-│   │   │   ├── page.js       # Main Job Search Dashboard Landing
-│   │   │   └── dashboard/    # User Dashboard (AI match, Saved bookmarks)
-│   │   ├── components/       # Component Library
-│   │   │   ├── JobFeed.jsx   # Grid view rendering for jobs
-│   │   │   └── FilterPanel.css # Custom layout properties
-│   │   ├── context/          # React Context State (AuthContext.js)
-│   │   └── lib/              # Client API Wrapper Mappings
-│   ├── package.json          # Node dependencies & commands
-│   └── next.config.mjs       # Build instructions for client application
-└── supabase/
-    └── migrations/           # SQL Database Schemas
+<div style="border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; margin-top: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.01);">
+<table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left;">
+<thead>
+<tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+<th style="padding: 12px 16px; font-weight: 700; color: #0f172a; width: 35%;">📂 Directory / File</th>
+<th style="padding: 12px 16px; font-weight: 700; color: #0f172a; width: 45%;">Role & Responsibility</th>
+<th style="padding: 12px 16px; font-weight: 700; color: #0f172a; width: 20%;">Tech Stack / Context</th>
+</tr>
+</thead>
+<tbody>
+<tr style="border-bottom: 1px solid #f1f5f9; background-color: #fcfcfd;">
+<td style="padding: 12px 16px; font-family: monospace; font-weight: 800; color: #4f46e5;">📂 backend/</td>
+<td style="padding: 12px 16px; color: #475569;">Core FastAPI server, ingestion routines, and background worker logic.</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #64748b;">FastAPI / Python</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9;">
+<td style="padding: 12px 16px 12px 32px; font-family: monospace; color: #1e293b;">📄 main.py</td>
+<td style="padding: 12px 16px; color: #64748b; font-size: 13px;">API gateway, CORS configuration, lifespan scheduling initialization.</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #94a3b8;">Uvicorn / APScheduler</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9;">
+<td style="padding: 12px 16px 12px 32px; font-family: monospace; color: #1e293b;">📄 config.py</td>
+<td style="padding: 12px 16px; color: #64748b; font-size: 13px;">Global environment and configuration model validation.</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #94a3b8;">Pydantic Settings</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9;">
+<td style="padding: 12px 16px 12px 32px; font-family: monospace; color: #1e293b;">📂 routers/</td>
+<td style="padding: 12px 16px; color: #64748b; font-size: 13px;">Handles API endpoint divisions (AI, Jobs, Alerts, Users).</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #94a3b8;">FastAPI Router</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9;">
+<td style="padding: 12px 16px 12px 32px; font-family: monospace; color: #1e293b;">📂 scrapers/</td>
+<td style="padding: 12px 16px; color: #64748b; font-size: 13px;">Direct crawlers and REST feed ingestion parsers.</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #94a3b8;">BeautifulSoup / httpx</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9;">
+<td style="padding: 12px 16px 12px 32px; font-family: monospace; color: #1e293b;">📂 services/</td>
+<td style="padding: 12px 16px; color: #64748b; font-size: 13px;">Core business logic: de-duplication hashers, AI scoring calls.</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #94a3b8;">Python / Groq SDK</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9; background-color: #fcfcfd;">
+<td style="padding: 12px 16px; font-family: monospace; font-weight: 800; color: #10b981;">📂 frontend/</td>
+<td style="padding: 12px 16px; color: #475569;">Interactive user client web application dashboard.</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #64748b;">Next.js / React 19</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9;">
+<td style="padding: 12px 16px 12px 32px; font-family: monospace; color: #1e293b;">📂 src/app/</td>
+<td style="padding: 12px 16px; color: #64748b; font-size: 13px;">Next.js application pages: feed, dashboard, auth paths.</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #94a3b8;">App Router</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9;">
+<td style="padding: 12px 16px 12px 32px; font-family: monospace; color: #1e293b;">📂 src/components/</td>
+<td style="padding: 12px 16px; color: #64748b; font-size: 13px;">Reusable UI blocks (Job cards, Navbars, Filtering sidebars).</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #94a3b8;">Tailwind CSS v4</td>
+</tr>
+<tr style="border-bottom: 1px solid #f1f5f9; background-color: #fcfcfd;">
+<td style="padding: 12px 16px; font-family: monospace; font-weight: 800; color: #06b6d4;">📂 supabase/</td>
+<td style="padding: 12px 16px; color: #475569;">Database migration schemas and security declarations.</td>
+<td style="padding: 12px 16px; font-family: monospace; font-size: 12px; color: #64748b;">SQL / migrations</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 
