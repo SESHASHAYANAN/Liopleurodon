@@ -2,8 +2,8 @@
 
 <!-- HERO SECTION -->
 <div style="text-align: center; margin-bottom: 40px; padding: 50px 30px; background: linear-gradient(135deg, #f5f3ff 0%, #ecfdf5 100%); border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02);">
-<div style="font-size: 70px; margin-bottom: 12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));">🦕</div>
-<h1 style="font-size: 50px; font-weight: 900; color: #4f46e5; margin: 0 0 16px 0; letter-spacing: -1.5px; line-height: 1.1;">Liopleurodon</h1>
+
+<h1 style="font-size: 50px; font-weight: 900; color: #4f46e5; margin: 0 0 16px 0; letter-spacing: -1.5px; line-height: 1.1;">🦕Liopleurodon</h1>
 <p style="font-size: 20px; color: #475569; max-width: 700px; margin: 0 auto 28px auto; font-weight: 500; line-height: 1.5;">
 A production-grade, self-sustaining global job aggregation engine. Scrapes, normalizes, and matches jobs from 10+ sources in real time using free-tier resources and AI embeddings.
 </p>
