@@ -3,6 +3,20 @@
 **Global Job Aggregation Platform** — scrapes, deduplicates, and serves job listings from 10+ sources with AI-powered matching and career insights.
 
 ---
+<!-- 1. Homepage -->
+<div style="border: 1px solid #d0d7de; border-radius: 8px; padding: 24px; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(27,31,36,0.04);">
+  <h3 style="margin-top: 0; font-size: 1.5em; color: #0969da;">1. Homepage</h3>
+  <p><strong>What it does:</strong> The homepage acts as the central hub of discovery, immediately presenting users with the most relevant and recent job postings from across the web without requiring a search.</p>
+  <p><strong>How it works internally:</strong> The component mounts and triggers a lightweight, paginated call to the backend. The API layer reads from the cached database layer to serve this default feed in milliseconds.</p>
+  <p><strong>User Flow:</strong> The user opens the app, instantly sees a curated list of jobs, and can seamlessly scroll downward to trigger infinite loading.</p>
+  <p><strong>Value to the user:</strong> Eliminates the "blank page" problem. Job seekers don't have to guess what to type; the value is presented the moment they arrive.</p>
+  
+  <div style="background-color: #f6f8fa; border: 2px dashed #d0d7de; color: #57606a; padding: 40px 20px; text-align: center; border-radius: 6px; margin: 20px 0; font-weight: 600;">
+    [ Add Homepage Screenshot Here ]
+  </div>
+
+  <div style="background-color: #ffffff; border: 1px solid #eaecef; padding: 15px; border-radius: 6px; text-align: center; overflow-x: auto;">
+    <pre style="font-family: ui-monospace, monospace; font-size: 11px; margin: 0; display: inline-block; text-align: left;">
 
 ## 📋 Table of Contents
 
