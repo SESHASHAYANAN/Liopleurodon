@@ -3,7 +3,7 @@
 # 🦕 Liopleurodon
 
 **A production-grade, self-sustaining global job aggregation engine.**
-Scrapes, normalizes, and matches jobs from 10+ sources in real time — using free-tier resources and AI embeddings.
+Scrapes, normalizes, and matches jobs from 10+ sources in real time, using free-tier resources and AI embeddings.
 
 [![Active Users](https://img.shields.io/badge/Active_Users-2%2C000%2B-4f46e5?style=for-the-badge&logo=users&logoColor=white)](#)
 [![Forever Free](https://img.shields.io/badge/Forever-Free-10b981?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](#)
