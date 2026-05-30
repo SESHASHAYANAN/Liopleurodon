@@ -264,7 +264,7 @@ python verify_jobs.py
 
 ### 1. Homepage Feed
 
-<h2>The command center of the job search experience. Displays aggregated cards containing salary, location, tech tags, and source verification. </h2>
+<h3>The command center of the job search experience. Displays aggregated cards containing salary, location, tech tags, and source verification. </h3>
 
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/575dcb31-926e-404f-8269-2ad5daf5cb1a" />
 
@@ -276,7 +276,7 @@ python verify_jobs.py
 
 ### 2. Filtering Panel
 
-<h2>Fine-grained search constraints supporting parameters such as remote status, location patterns, salary thresholds, and corporate attributes. </h2>
+<h3>Fine-grained search constraints supporting parameters such as remote status, location patterns, salary thresholds, and corporate attributes. </h3>
 
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/de1f061f-66dc-4e8c-a4ac-730adc7b1ce5" />
 
@@ -289,7 +289,7 @@ python verify_jobs.py
 
 ### 3. User Dashboard
 
-<h2>A personalized hub for registered users. Handles saved jobs, job applications, alert intervals, and AI settings. </h2>
+<h3>A personalized hub for registered users. Handles saved jobs, job applications, alert intervals, and AI settings. </h3>
 
 <img width="1366" height="738" alt="image" src="https://github.com/user-attachments/assets/4686e607-c668-4115-bf64-a1b143ae4214" />
 
@@ -302,7 +302,7 @@ python verify_jobs.py
 
 ### 4. AI Resume Matching
 
-<h2>Drag-and-drop resume scanner. Automatically matches technical skills, lists gaps, and scores matches against active jobs.</h2>
+<h3>Drag-and-drop resume scanner. Automatically matches technical skills, lists gaps, and scores matches against active jobs.</h3>
 
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/a00f9fa2-ac31-48e2-8961-b3f9e662f133" />
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/c1bf8524-6a83-496e-8e32-2c5d0a9d201e" />
