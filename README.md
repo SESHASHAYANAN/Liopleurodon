@@ -264,7 +264,9 @@ python verify_jobs.py
 
 ### 1. Homepage Feed
 
-The command center of the job search experience. Displays aggregated cards containing salary, location, tech tags, and source verification.
+<h2>The command center of the job search experience. Displays aggregated cards containing salary, location, tech tags, and source verification. </h2>
+
+<img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/575dcb31-926e-404f-8269-2ad5daf5cb1a" />
 
 | Internal Mechanics | User Flow |
 |---|---|
@@ -274,7 +276,10 @@ The command center of the job search experience. Displays aggregated cards conta
 
 ### 2. Filtering Panel
 
-Fine-grained search constraints supporting parameters such as remote status, location patterns, salary thresholds, and corporate attributes.
+<h2>Fine-grained search constraints supporting parameters such as remote status, location patterns, salary thresholds, and corporate attributes. </h2>
+
+<img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/de1f061f-66dc-4e8c-a4ac-730adc7b1ce5" />
+
 
 | Internal Mechanics | User Flow |
 |---|---|
@@ -284,7 +289,10 @@ Fine-grained search constraints supporting parameters such as remote status, loc
 
 ### 3. User Dashboard
 
-A personalized hub for registered users. Handles saved jobs, job applications, alert intervals, and AI settings.
+<h2>A personalized hub for registered users. Handles saved jobs, job applications, alert intervals, and AI settings. </h2>
+
+<img width="1366" height="738" alt="image" src="https://github.com/user-attachments/assets/4686e607-c668-4115-bf64-a1b143ae4214" />
+
 
 | Internal Mechanics | User Flow |
 |---|---|
@@ -294,7 +302,10 @@ A personalized hub for registered users. Handles saved jobs, job applications, a
 
 ### 4. AI Resume Matching
 
-Drag-and-drop resume scanner. Automatically matches technical skills, lists gaps, and scores matches against active jobs.
+<h2>Drag-and-drop resume scanner. Automatically matches technical skills, lists gaps, and scores matches against active jobs.</h2>
+
+<img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/a00f9fa2-ac31-48e2-8961-b3f9e662f133" />
+<img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/c1bf8524-6a83-496e-8e32-2c5d0a9d201e" />
 
 | Internal Mechanics | User Flow |
 |---|---|
