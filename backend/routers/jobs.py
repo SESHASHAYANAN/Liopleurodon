@@ -2,7 +2,7 @@
 Liopleurodon — Jobs Router
 Search, filter, and retrieve job listings.
 Featured (⭐) jobs appear first, then newest posted jobs on top (sorted by posted_date).
-Expired jobs (posted_date > 21 days ago) are automatically filtered out.
+Expired jobs (posted_date > 45 days ago) are automatically filtered out.
 """
 
 from fastapi import APIRouter, Query
@@ -13,7 +13,7 @@ from database import get_supabase_admin
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 # ─── Expiry threshold: jobs older than this are considered expired ──
-EXPIRY_DAYS = 21
+EXPIRY_DAYS = 45
 
 
 @router.get("")

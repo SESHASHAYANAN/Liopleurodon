@@ -17,7 +17,15 @@ scheduler = AsyncIOScheduler()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle."""
-    # ─── Cleanup expired jobs on startup ───────────────────────
+    # ─── STEP 1: Recover wrongly deactivated jobs on startup ───
+    try:
+        from recover_jobs import recover_all_jobs
+        recovered = await recover_all_jobs()
+        print(f"[Liopleurodon] Startup recovery: {recovered} jobs re-activated.")
+    except Exception as e:
+        print(f"[Liopleurodon] Startup recovery error (non-fatal): {e}")
+
+    # ─── STEP 2: Light expired-only cleanup on startup ─────────
     try:
         from scrapers.web_scraper import mark_stale_jobs
         await mark_stale_jobs()
@@ -25,7 +33,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[Liopleurodon] Startup cleanup error (non-fatal): {e}")
 
-    # ─── API-based scrapers (every 1 hour for faster growth to 2500+) ──
+    # ─── API-based scrapers (every 1 hour) ─────────────────────
     from services.scheduler import run_periodic_scrapes
     scheduler.add_job(
         run_periodic_scrapes,
@@ -34,7 +42,7 @@ async def lifespan(app: FastAPI):
         id="scrape_all",
     )
 
-    # ─── India job scale-up (every 40 minutes → target 3000+) ──
+    # ─── India job scale-up (every 40 minutes → target 10,000+) ──
     from scale_india_jobs import run_india_scale
     scheduler.add_job(
         run_india_scale,
@@ -52,16 +60,18 @@ async def lifespan(app: FastAPI):
         id="web_scrape",
     )
 
-    # ─── Stale + expired job cleanup (every 10 minutes) ────────
+    # ─── Expired job cleanup (every 6 hours — NOT every 10 min) ─
+    # Previously running every 10 min, this was aggressively killing
+    # ~8,000+ valid jobs. Now only runs periodically for true expiry.
     scheduler.add_job(
         mark_stale_jobs,
         "interval",
-        minutes=10,
-        id="stale_cleanup",
+        hours=6,
+        id="expiry_cleanup",
     )
 
     scheduler.start()
-    print("[Liopleurodon] Backend started! API scrapers: 1h, India scale: 40min, Web scrapers: 10min.")
+    print("[Liopleurodon] Backend started! API scrapers: 1h, India scale: 40min, Web scrapers: 10min, Expiry cleanup: 6h.")
     yield
     scheduler.shutdown()
     print("[Liopleurodon] Backend shutting down.")

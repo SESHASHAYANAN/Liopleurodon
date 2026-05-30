@@ -46,10 +46,13 @@ FOREIGN_CITY_MARKERS = {
 
 # ── Experience Level Classification ───────────────────────────────────────
 
+PRINCIPAL_PATTERNS = [
+    r'\bprincipal\b', r'\bdistinguished\b', r'\bfellow\b',
+]
+
 STAFF_PATTERNS = [
-    r'\bstaff\b', r'\bprincipal\b', r'\bdistinguished\b',
+    r'\bstaff\b',
     r'\bvp\b', r'\bdirector\b', r'\bchief\b', r'\bhead\s+of\b',
-    r'\bfellow\b',
 ]
 
 LEAD_PATTERNS = [
@@ -77,7 +80,7 @@ INTERN_PATTERNS = [
 def classify_experience_level(title: str, description: str = "") -> str:
     """
     Classify experience level strictly from the job TITLE.
-    Priority order: intern > staff > lead > senior > junior > mid (default).
+    Priority: intern > principal > staff > lead > senior > junior > mid (default).
     """
     t = title.lower().strip()
     
@@ -85,23 +88,27 @@ def classify_experience_level(title: str, description: str = "") -> str:
     if any(re.search(p, t) for p in INTERN_PATTERNS):
         return "intern"
     
-    # 2. Staff/Principal/VP/Director
+    # 2. Principal/Distinguished/Fellow
+    if any(re.search(p, t) for p in PRINCIPAL_PATTERNS):
+        return "principal"
+    
+    # 3. Staff/VP/Director/Chief
     if any(re.search(p, t) for p in STAFF_PATTERNS):
         return "staff"
     
-    # 3. Lead
+    # 4. Lead
     if any(re.search(p, t) for p in LEAD_PATTERNS):
         return "lead"
     
-    # 4. Senior
+    # 5. Senior
     if any(re.search(p, t) for p in SENIOR_PATTERNS):
         return "senior"
     
-    # 5. Junior
+    # 6. Junior
     if any(re.search(p, t) for p in JUNIOR_PATTERNS):
         return "junior"
     
-    # 6. Default = mid
+    # 7. Default = mid
     return "mid"
 
 
@@ -151,9 +158,22 @@ def validate_india_job(job: dict) -> bool:
     return True
 
 
+# Non-tech / low-quality title markers
+NON_TECH_TITLES = [
+    "sales", "marketing manager", "human resources", "recruiter",
+    "customer support", "customer success", "bpo", "call center",
+    "account executive", "business development", "content writer",
+    "copywriter", "talent acquisition", "receptionist", "secretary",
+    "data entry", "typist", "housekeeping", "driver", "delivery",
+    "cook", "chef", "waiter", "cashier", "clerk", "peon",
+    "watchman", "guard", "plumber", "electrician", "carpenter",
+]
+
+
 def validate_job_data_quality(job: dict) -> tuple:
     """
     Validate overall job data quality. Returns (is_valid, reason).
+    Ensures only high-quality, complete tech job listings pass through.
     """
     title = (job.get("title") or "").strip()
     company = (job.get("company_name") or "").strip()
@@ -170,6 +190,14 @@ def validate_job_data_quality(job: dict) -> tuple:
     title_lower = title.lower()
     if any(title_lower.startswith(m) for m in ["test ", "mock ", "dummy ", "placeholder "]):
         return False, "fake/test job"
+    
+    # Reject non-tech jobs
+    if any(nt in title_lower for nt in NON_TECH_TITLES):
+        return False, "non-tech job"
+    
+    # Reject jobs with too-generic titles (likely spam)
+    if title_lower in ["job", "opening", "vacancy", "hiring", "urgent", "required"]:
+        return False, "generic/spam title"
     
     # Country-location cross-validation
     country = (job.get("location_country") or "").lower()

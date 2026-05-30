@@ -969,69 +969,57 @@ async def _store_scraped_jobs(jobs: list) -> tuple:
 
 
 async def mark_stale_jobs():
-    """Mark jobs as inactive if not seen in 3 scrape cycles (30 minutes).
-    Also deactivates expired jobs (posted_date > 45 days ago) from ALL sources.
+    """Deactivate expired jobs (posted_date > 45 days ago).
+    
+    IMPORTANT: We do NOT mark API-sourced jobs as stale between scrape cycles.
+    API-sourced jobs (Adzuna, JSearch, etc.) are fetched hourly and remain valid
+    until they expire by posted_date. Only the posted_date expiry is enforced.
+    
+    This was previously deactivating jobs after 30 minutes of not being re-scraped,
+    which caused ~8,000 jobs to disappear from the database.
     """
     from database import get_supabase_admin
     from datetime import timedelta
 
     db = get_supabase_admin()
 
-    # ─── 1. Mark web-scraped stale jobs (not seen in 30 min) ────
+    # ─── Deactivate globally expired jobs (posted > 45 days ago) ──
+    # Using 45 days instead of 21 to keep more jobs visible.
+    # The jobs router already filters by posted_date for freshness display.
     try:
-        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
-        web_sources = ["WebScraper", "YC-WATS", "YC-Jobs", "Simplify", "ArcDev",
-                       "Web3-DS", "Web3-Remote", "Web3-OKX", "MigrateMate", "Arbeitnow",
-                       "Remotive", "Remotive-AI", "HasJob", "Jobicy", "Himalayas",
-                       "RemoteOK", "AI-Jobs", "Karkidi", "Instahyre", "Adzuna-IN",
-                       "Adzuna-IN-Junior", "Internshala", "Freshersworld",
-                       "CutShort", "Wellfound-IN", "Naukri-Startups",
-                       "Shine-Startups", "TimesJobs"]
+        expiry_cutoff = (datetime.now(timezone.utc) - timedelta(days=45)).isoformat()
+        offset = 0
+        total_deactivated = 0
 
-        for source in web_sources:
-            try:
-                stale = (db.table("jobs")
-                        .select("id")
-                        .eq("is_active", True)
-                        .contains("source_platforms", [source])
-                        .lt("updated_at", cutoff)
-                        .execute())
+        while True:
+            expired = (db.table("jobs")
+                       .select("id")
+                       .eq("is_active", True)
+                       .lt("posted_date", expiry_cutoff)
+                       .range(offset, offset + 499)
+                       .execute())
 
-                if stale.data:
-                    for job in stale.data:
-                        db.table("jobs").update({
-                            "is_active": False,
-                            "updated_at": datetime.now(timezone.utc).isoformat(),
-                        }).eq("id", job["id"]).execute()
+            if not expired.data:
+                break
 
-                    print(f"[WebScraper] Marked {len(stale.data)} stale jobs from {source}")
-            except Exception as e:
-                print(f"[WebScraper] Staleness check error for {source}: {e}")
-    except Exception as e:
-        print(f"[WebScraper] mark_stale_jobs error: {e}")
-
-    # ─── 2. Deactivate globally expired jobs (posted > 21 days ago) ──
-    try:
-        expiry_cutoff = (datetime.now(timezone.utc) - timedelta(days=21)).isoformat()
-        expired = (db.table("jobs")
-                   .select("id")
-                   .eq("is_active", True)
-                   .lt("posted_date", expiry_cutoff)
-                   .limit(500)
-                   .execute())
-
-        if expired.data:
-            deactivated = 0
             for job in expired.data:
                 try:
                     db.table("jobs").update({
                         "is_active": False,
                         "updated_at": datetime.now(timezone.utc).isoformat(),
                     }).eq("id", job["id"]).execute()
-                    deactivated += 1
+                    total_deactivated += 1
                 except Exception:
                     pass
-            print(f"[WebScraper] Deactivated {deactivated} expired jobs (posted before {expiry_cutoff[:10]})")
+
+            if len(expired.data) < 500:
+                break
+            offset += 500
+
+        if total_deactivated > 0:
+            print(f"[WebScraper] Deactivated {total_deactivated} expired jobs (posted before {expiry_cutoff[:10]})")
+        else:
+            print(f"[WebScraper] No expired jobs to deactivate.")
     except Exception as e:
         print(f"[WebScraper] Expired job cleanup error: {e}")
 

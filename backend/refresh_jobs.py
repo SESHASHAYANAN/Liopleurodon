@@ -25,8 +25,8 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 db = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-TARGET = 2100
-EXPIRY_DAYS = 21
+TARGET = 10000
+EXPIRY_DAYS = 45
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

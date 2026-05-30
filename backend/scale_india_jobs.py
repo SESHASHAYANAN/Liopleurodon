@@ -39,7 +39,7 @@ HEADERS = {
     "Accept": "application/json",
 }
 
-TARGET_JOBS = 3000
+TARGET_JOBS = 10000
 
 # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -497,7 +497,7 @@ def reactivate_india_jobs():
 async def run_india_scale():
     """Main entry point — can be called from scheduler or CLI."""
     print("=" * 65)
-    print("  LIOPLEURODON — Scale India Jobs to 3000+")
+    print("  LIOPLEURODON — Scale India Jobs to 10,000+")
     print(f"  {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print("=" * 65)
 
@@ -553,7 +553,7 @@ async def run_india_scale():
     # Breakdown by experience level
     print(f"\n  {'─' * 40}")
     print("  EXPERIENCE LEVEL BREAKDOWN:")
-    for level in ["intern", "junior", "mid", "senior", "lead", "staff"]:
+    for level in ["intern", "junior", "mid", "senior", "lead", "staff", "principal"]:
         try:
             count = db.table("jobs").select("id", count="exact").eq("is_active", True).eq("experience_level", level).or_("location_country.ilike.%India%,location_country.eq.IN").execute().count or 0
             print(f"    {level:12s}: {count}")

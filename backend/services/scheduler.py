@@ -38,8 +38,9 @@ SCRAPERS = [
     (LinkedInScraper(), normalize_linkedin),
 ]
 
-# Search queries to rotate through
+# Search queries to rotate through — heavily India-focused
 SEARCH_QUERIES = [
+    # Core engineering roles
     "software engineer",
     "software engineer visa sponsorship",
     "software engineer relocation",
@@ -79,6 +80,62 @@ SEARCH_QUERIES = [
     "junior data analyst",
     "junior AI engineer",
     "founding engineer",
+    # India-specific queries
+    "software engineer India",
+    "developer India",
+    "python developer India",
+    "react developer India",
+    "data scientist India",
+    "machine learning India",
+    "devops India",
+    "full stack India",
+    "cloud engineer India",
+    "backend developer India",
+    "frontend developer India",
+    "android developer India",
+    "flutter developer India",
+    "data analyst India",
+    "AI engineer India",
+    "data engineer India",
+    "senior software engineer India",
+    "tech lead India",
+    "intern software India",
+    "fresher engineer India",
+    "junior developer India",
+    # Remote/hybrid/contract/freelance
+    "remote developer India",
+    "remote software engineer India",
+    "hybrid developer India",
+    "contract developer India",
+    "freelance developer India",
+    "part-time developer India",
+    # Senior/Lead/Staff
+    "staff engineer India",
+    "principal engineer India",
+    "engineering manager India",
+    "lead engineer India",
+    # Specialized
+    "NLP engineer",
+    "deep learning engineer",
+    "MLOps engineer",
+    "GenAI engineer",
+    "computer vision engineer",
+    "kubernetes engineer",
+    "docker engineer",
+    "golang developer",
+    "rust developer",
+    "typescript developer",
+    "angular developer",
+    "vue.js developer",
+    "spring boot developer",
+    "django developer",
+    "fastapi developer",
+    "cybersecurity engineer",
+    "SDET",
+    "automation engineer",
+    "embedded systems engineer",
+    "firmware engineer",
+    "robotics engineer",
 ]
 
 LOCATIONS = [
@@ -92,11 +149,8 @@ LOCATIONS = [
     "Germany",
     "Singapore",
     "Australia",
+    # Indian cities — primary targets
     "Bangalore",
-    "San Francisco",
-    "New York",
-    "London",
-    # Indian cities for startup onsite roles
     "Mumbai",
     "Hyderabad",
     "Pune",
@@ -104,6 +158,19 @@ LOCATIONS = [
     "Delhi",
     "Gurgaon",
     "Noida",
+    "Kolkata",
+    "Ahmedabad",
+    "Kochi",
+    "Jaipur",
+    "Indore",
+    "Coimbatore",
+    # International tech hubs
+    "San Francisco",
+    "New York",
+    "London",
+    "Berlin",
+    "Toronto",
+    "Sydney",
 ]
 
 last_scrape_status = {
@@ -253,16 +320,35 @@ def get_scrape_status() -> dict:
 
 async def run_periodic_scrapes():
     """Run periodic scrapes cycling through multiple combinations.
-    Samples 4 queries x 3 locations = up to 12 scrape rounds per cycle
-    to build toward 2,500+ jobs in the database.
+    Samples 6 queries x 4 locations = up to 24 scrape rounds per cycle
+    to build toward 10,000+ jobs in the database.
+    
+    India-focused: prioritizes Indian queries and locations.
     """
     import random
     
-    # Pick 4 random queries and 3 random locations for broad coverage
-    queries = random.sample(SEARCH_QUERIES, min(4, len(SEARCH_QUERIES)))
-    locations = random.sample(LOCATIONS, min(3, len(LOCATIONS)))
+    # Prioritize India — always include at least 2 India-specific queries
+    india_queries = [q for q in SEARCH_QUERIES if "India" in q or "India" in q.lower()]
+    other_queries = [q for q in SEARCH_QUERIES if q not in india_queries]
+    
+    # Pick 3 India + 3 other queries
+    selected_india = random.sample(india_queries, min(3, len(india_queries)))
+    selected_other = random.sample(other_queries, min(3, len(other_queries)))
+    queries = selected_india + selected_other
+    
+    # Always include India + 3 other locations
+    india_cities = [loc for loc in LOCATIONS if loc in [
+        "India", "Bangalore", "Mumbai", "Hyderabad", "Pune", "Chennai",
+        "Delhi", "Gurgaon", "Noida", "Kolkata", "Ahmedabad", "Kochi",
+    ]]
+    other_locations = [loc for loc in LOCATIONS if loc not in india_cities]
+    
+    selected_india_locs = random.sample(india_cities, min(2, len(india_cities)))
+    selected_other_locs = random.sample(other_locations, min(2, len(other_locations)))
+    locations = selected_india_locs + selected_other_locs
     
     for q in queries:
         for loc in locations:
             print(f"[Scheduler] Scraping for query: '{q}', location: '{loc}'")
             await scrape_all_sources(query=q, location=loc)
+
