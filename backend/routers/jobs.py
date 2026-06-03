@@ -34,7 +34,7 @@ async def search_jobs(
     posted_within: Optional[str] = None,
     page: int = 1,
     per_page: int = 20,
-    sort_by: str = "posted_date",
+    sort_by: str = "created_at",
     sort_order: str = "desc",
 ):
     """Search and filter jobs with pagination.

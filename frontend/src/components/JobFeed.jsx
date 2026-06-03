@@ -234,7 +234,7 @@ export default function JobFeed() {
             </h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 360, lineHeight: 1.6 }}>
               Could not connect to the API server. Make sure the backend is running
-              on <code style={{ fontSize: 12, background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: 4 }}>http://127.0.0.1:8000</code>
+              on <code style={{ fontSize: 12, background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: 4 }}>http://localhost:8000</code>
             </p>
             <button
               onClick={handleManualRetry}

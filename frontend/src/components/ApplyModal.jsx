@@ -1,15 +1,21 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Building2, MapPin, DollarSign, Shield, Plane, Users, Briefcase, ExternalLink } from 'lucide-react';
+import { X, Building2, MapPin, DollarSign, Shield, Plane, Users, Briefcase, ExternalLink, Zap } from 'lucide-react';
 import { formatSalary, getInitials } from '@/lib/utils';
+import { useState } from 'react';
+import DirectApplyModal from './DirectApplyModal';
 
 export default function JobDetailsModal({ job, onClose }) {
   if (!job) return null;
 
   const companyName = job.company_name || 'Unknown Company';
 
+  const [showDirectApply, setShowDirectApply] = useState(false);
+  const isDirectApply = (job.direct_apply_ats || '').match(/greenhouse|lever/i);
+
   const handleApply = () => {
+    if (isDirectApply) { setShowDirectApply(true); return; }
     if (job.apply_url) window.open(job.apply_url, '_blank', 'noopener,noreferrer');
   };
 
@@ -222,9 +228,10 @@ export default function JobDetailsModal({ job, onClose }) {
           {/* ── Footer CTA ── */}
           <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface)' }}>
             <button className="btn btn-primary" onClick={handleApply}
-              style={{ width: '100%', padding: '12px 24px', fontSize: 15, borderRadius: 12 }}>
-              <ExternalLink size={18} /> Apply Now
+              style={{ width: '100%', padding: '12px 24px', fontSize: 15, borderRadius: 12, ...(isDirectApply ? { background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' } : {}) }}>
+              {isDirectApply ? <><Zap size={18} /> Quick Apply</> : <><ExternalLink size={18} /> Apply Now</>}
             </button>
+            {showDirectApply && <DirectApplyModal job={job} onClose={() => setShowDirectApply(false)} />}
           </div>
         </motion.div>
       </motion.div>

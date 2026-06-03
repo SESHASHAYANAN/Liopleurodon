@@ -7,11 +7,14 @@ import { useState, useEffect } from 'react';
 import { summarizeJob, getSimilarJobs } from '@/lib/api';
 import ReactMarkdown from 'react-markdown';
 import toast from 'react-hot-toast';
+import DirectApplyModal from './DirectApplyModal';
 
 export default function JobDetailPanel({ job, onClose }) {
   const [aiSummary, setAiSummary] = useState('');
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [similar, setSimilar] = useState([]);
+  const [showDirectApply, setShowDirectApply] = useState(false);
+  const isDirectApply = job && (job.direct_apply_ats || '').match(/greenhouse|lever/i);
 
   useEffect(() => {
     if (job?.id) {
@@ -220,11 +223,13 @@ export default function JobDetailPanel({ job, onClose }) {
             background: 'var(--bg-surface)',
           }}>
             <button className="btn btn-primary" onClick={() => {
+              if (isDirectApply) { setShowDirectApply(true); return; }
               if (job.apply_url) window.open(job.apply_url, '_blank', 'noopener,noreferrer');
             }}
-              style={{ width: '100%', padding: '12px 24px', fontSize: 15, borderRadius: 12 }}>
-              <ExternalLink size={18} /> Apply Now
+              style={{ width: '100%', padding: '12px 24px', fontSize: 15, borderRadius: 12, ...(isDirectApply ? { background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' } : {}) }}>
+              {isDirectApply ? <>⚡ Quick Apply via {job.ats_detected}</> : <><ExternalLink size={18} /> Apply Now</>}
             </button>
+            {showDirectApply && <DirectApplyModal job={job} onClose={() => setShowDirectApply(false)} />}
           </div>
         </motion.div>
       </motion.div>

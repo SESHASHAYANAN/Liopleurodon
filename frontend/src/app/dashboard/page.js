@@ -7,13 +7,14 @@ import JobCard from '@/components/JobCard';
 import JobDetailPanel from '@/components/JobDetailPanel';
 import { supabase } from '@/lib/supabase';
 import { matchResumeWithPDF, matchJobsWithKeywords } from '@/lib/api';
-import { Bookmark, Briefcase, Bell, FileText, Upload, Sparkles, X, CheckCircle, AlertCircle, Search, Star } from 'lucide-react';
+import { Bookmark, Briefcase, Bell, FileText, Upload, Sparkles, X, CheckCircle, AlertCircle, Search, Star, User, Save, Phone, Link, MapPin, Building } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const TABS = [
   { id: 'saved', label: 'Saved Jobs', icon: <Bookmark size={16} /> },
   { id: 'applied', label: 'Applications', icon: <Briefcase size={16} /> },
+  { id: 'profile', label: 'Profile', icon: <User size={16} /> },
   { id: 'alerts', label: 'Job Alerts', icon: <Bell size={16} /> },
   { id: 'resume', label: 'AI Matching', icon: <Sparkles size={16} /> },
 ];
@@ -41,6 +42,16 @@ export default function DashboardPage() {
   const [totalAnalyzed, setTotalAnalyzed] = useState(0);
   const fileInputRef = useRef(null);
 
+  // Profile state
+  const [profileForm, setProfileForm] = useState({
+    full_name: '', phone: '', linkedin_url: '', portfolio_url: '',
+    location: '', current_company: '', cover_letter_default: '',
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [resumeFile, setResumeFile] = useState(null);
+  const resumeInputRef = useRef(null);
+
   useEffect(() => {
     if (user) { loadData(); }
     else { setLoading(false); setSavedJobs([]); setApplications([]); setAlerts([]); }
@@ -58,9 +69,64 @@ export default function DashboardPage() {
       } else if (activeTab === 'alerts') {
         const { data } = await supabase.from('job_alerts').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
         setAlerts(data || []);
+      } else if (activeTab === 'profile' && !profileLoaded) {
+        try {
+          const { getApplyProfile } = await import('@/lib/api');
+          const res = await getApplyProfile();
+          if (res.success && res.profile) {
+            setProfileForm({
+              full_name: res.profile.full_name || user?.user_metadata?.full_name || '',
+              phone: res.profile.phone || '',
+              linkedin_url: res.profile.linkedin_url || '',
+              portfolio_url: res.profile.portfolio_url || '',
+              location: res.profile.location || '',
+              current_company: res.profile.current_company || '',
+              cover_letter_default: res.profile.cover_letter_default || '',
+            });
+          } else {
+            setProfileForm(prev => ({ ...prev, full_name: user?.user_metadata?.full_name || '' }));
+          }
+          setProfileLoaded(true);
+        } catch (e) {
+          console.warn('Profile load error:', e);
+          setProfileForm(prev => ({ ...prev, full_name: user?.user_metadata?.full_name || '' }));
+          setProfileLoaded(true);
+        }
       }
     } catch (err) { console.error(err); }
     setLoading(false);
+  };
+
+  const handleProfileSave = async () => {
+    setProfileSaving(true);
+    try {
+      const { updateApplyProfile } = await import('@/lib/api');
+      const res = await updateApplyProfile(profileForm);
+      if (res.success) {
+        toast.success('Profile saved successfully!');
+      } else {
+        toast.error(res.error || 'Failed to save profile');
+      }
+    } catch (e) {
+      toast.error('Failed to save profile');
+    }
+    setProfileSaving(false);
+  };
+
+  const handleResumeUpload = async () => {
+    if (!resumeFile) return;
+    try {
+      const { uploadResume } = await import('@/lib/api');
+      const res = await uploadResume(resumeFile);
+      if (res.success) {
+        toast.success(`Resume uploaded: ${res.file_name}`);
+        setResumeFile(null);
+      } else {
+        toast.error(res.error || 'Upload failed');
+      }
+    } catch (e) {
+      toast.error('Resume upload failed');
+    }
   };
 
   // ─── PDF Upload Handlers ──────────────────────────────────
@@ -191,16 +257,118 @@ export default function DashboardPage() {
           <div>
             {!user ? (
               <div style={{ textAlign: 'center', padding: 60 }}><div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div><h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Sign in required</h3><p style={{ color: 'var(--text-muted)' }}>Please sign in to view your applications.</p></div>
-            ) : applications.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60 }}><Briefcase size={48} style={{ color: 'var(--text-muted)', marginBottom: 16 }} /><h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No applications tracked</h3><p style={{ color: 'var(--text-muted)' }}>Applications you track will appear here.</p></div>
+            ) : loading ? (
+              <div style={{ color: 'var(--text-muted)', padding: 40, textAlign: 'center' }}>Loading applications...</div>
+            ) : applications.filter(a => a.status && a.status !== 'failed').length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 60 }}><Briefcase size={48} style={{ color: 'var(--text-muted)', marginBottom: 16 }} /><h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No successful applications yet</h3><p style={{ color: 'var(--text-muted)' }}>When you auto-apply to jobs, confirmed submissions will appear here.</p></div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {applications.map((app) => (
+                {applications.filter(a => a.status && a.status !== 'failed').map((app) => (
                   <div key={app.id} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div><div style={{ fontWeight: 600 }}>{app.jobs?.title}</div><div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{app.jobs?.company_name}</div></div>
-                    <span className={`badge ${app.status === 'offered' ? 'badge-success' : app.status === 'rejected' ? 'badge-error' : 'badge-primary'}`}>{app.status}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600 }}>{app.jobs?.title || 'Unknown Position'}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2 }}>
+                        <span>{app.jobs?.company_name || 'Unknown'}</span>
+                        {app.apply_method && <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'rgba(124,58,237,0.1)', color: '#a78bfa' }}>{app.apply_method.replace('direct_', '⚡ ')}</span>}
+                        {app.applied_at && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(app.applied_at).toLocaleDateString()}</span>}
+                      </div>
+                    </div>
+                    <span className={`badge ${app.status === 'offered' ? 'badge-success' : app.status === 'rejected' ? 'badge-error' : app.status === 'applied' ? 'badge-primary' : 'badge-secondary'}`}>{app.status}</span>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div>
+            {!user ? (
+              <div style={{ textAlign: 'center', padding: 60 }}><div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div><h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Sign in required</h3><p style={{ color: 'var(--text-muted)' }}>Please sign in to manage your profile.</p></div>
+            ) : (
+              <div style={{ maxWidth: 700 }}>
+                <div className="card" style={{ padding: 28, marginBottom: 24, background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(16, 185, 129, 0.05))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#fff' }}>
+                      {(profileForm.full_name || user.email)?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 2 }}>Auto-Apply Profile</h3>
+                      <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>This data auto-fills and submits your applications hands-off when you click "Quick Apply" on any supported job (Lever, Greenhouse).</p>
+                    </div>
+                  </div>
+
+                  {/* Email (read-only) */}
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}>📧 Email (from your account)</label>
+                    <input type="email" value={user.email || ''} disabled className="input" style={{ opacity: 0.6 }} />
+                  </div>
+
+                  {/* Full Name */}
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}><User size={14} /> Full Name *</label>
+                    <input type="text" value={profileForm.full_name} onChange={e => setProfileForm(p => ({ ...p, full_name: e.target.value }))} className="input" placeholder="Your full name" />
+                  </div>
+
+                  {/* Phone + LinkedIn in a row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}><Phone size={14} /> Phone</label>
+                      <input type="tel" value={profileForm.phone} onChange={e => setProfileForm(p => ({ ...p, phone: e.target.value }))} className="input" placeholder="e.g. 9876543210" />
+                    </div>
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}><Link size={14} /> LinkedIn URL</label>
+                      <input type="url" value={profileForm.linkedin_url} onChange={e => setProfileForm(p => ({ ...p, linkedin_url: e.target.value }))} className="input" placeholder="https://linkedin.com/in/..." />
+                    </div>
+                  </div>
+
+                  {/* Portfolio + Current Company */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}>🔗 Portfolio / GitHub</label>
+                      <input type="url" value={profileForm.portfolio_url} onChange={e => setProfileForm(p => ({ ...p, portfolio_url: e.target.value }))} className="input" placeholder="https://github.com/..." />
+                    </div>
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}><Building size={14} /> Current Company</label>
+                      <input type="text" value={profileForm.current_company} onChange={e => setProfileForm(p => ({ ...p, current_company: e.target.value }))} className="input" placeholder="e.g. Google" />
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}><MapPin size={14} /> Location</label>
+                    <input type="text" value={profileForm.location} onChange={e => setProfileForm(p => ({ ...p, location: e.target.value }))} className="input" placeholder="e.g. Chennai, India" />
+                  </div>
+
+                  {/* Default Cover Letter */}
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}>📝 Default Cover Letter</label>
+                    <textarea value={profileForm.cover_letter_default} onChange={e => setProfileForm(p => ({ ...p, cover_letter_default: e.target.value }))} className="input" placeholder="Write a default cover letter to send with applications..." style={{ minHeight: 100, resize: 'vertical', fontFamily: 'inherit' }} />
+                  </div>
+
+                  {/* Resume Upload */}
+                  <div style={{ marginBottom: 24 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}><FileText size={14} /> Resume (PDF)</label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" onChange={e => setResumeFile(e.target.files?.[0] || null)} className="input" style={{ flex: 1 }} />
+                      {resumeFile && (
+                        <button className="btn btn-secondary" onClick={handleResumeUpload} style={{ padding: '8px 16px', fontSize: 13, borderRadius: 8, whiteSpace: 'nowrap' }}>
+                          <Upload size={14} /> Upload
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <button className="btn btn-primary" onClick={handleProfileSave} disabled={profileSaving} style={{ width: '100%', padding: '14px 24px', fontSize: 15, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    {profileSaving ? (
+                      <><span className="spin-icon" style={{ display: 'inline-block' }}>⏳</span> Saving...</>
+                    ) : (
+                      <><Save size={16} /> Save Profile</>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>

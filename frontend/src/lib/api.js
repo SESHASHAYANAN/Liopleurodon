@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 /**
  * Fetch from the backend API with automatic retry + exponential backoff.
@@ -14,20 +14,31 @@ async function fetchApi(endpoint, options = {}, maxRetries = 3) {
         headers: { 'Content-Type': 'application/json', ...options.headers },
         ...options,
       });
+
+      // Retry on 429 (Too Many Requests)
+      if (res.status === 429 && attempt < maxRetries) {
+        const retryAfter = res.headers.get('Retry-After');
+        const delay = retryAfter
+          ? (parseFloat(retryAfter) * 1000) + Math.random() * 1000
+          : Math.pow(2, attempt) * 1000 + Math.random() * 1500;
+        console.warn(`[API] 429 rate limited on ${endpoint}, retry ${attempt + 1}/${maxRetries} in ${Math.round(delay)}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       return res.json();
     } catch (err) {
       lastError = err;
-      // Only retry on network errors, not HTTP errors (4xx/5xx already thrown above)
+      // Retry on network errors
       const isNetworkError = err.message === 'Failed to fetch' ||
         err.message.includes('NetworkError') ||
         err.message.includes('ECONNREFUSED') ||
         err.name === 'TypeError';
 
       if (isNetworkError && attempt < maxRetries) {
-        // Exponential backoff: 1s, 2s, 4s
-        const delay = Math.pow(2, attempt) * 1000;
-        console.warn(`[API] Retry ${attempt + 1}/${maxRetries} for ${endpoint} in ${delay}ms`);
+        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+        console.warn(`[API] Retry ${attempt + 1}/${maxRetries} for ${endpoint} in ${Math.round(delay)}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -121,5 +132,91 @@ async function fetchApiFormData(endpoint, formData, maxRetries = 3) {
     }
   }
   throw lastError;
+}
+
+// ─── Direct Apply API ────────────────────────────────────────────
+
+export async function checkDirectApply(jobId) {
+  return fetchApi(`/api/apply/${jobId}/check`);
+}
+
+export async function getApplyForm(jobId) {
+  const token = (await import('@/lib/supabase')).supabase.auth.getSession
+    ? (await (await import('@/lib/supabase')).supabase.auth.getSession()).data?.session?.access_token
+    : '';
+  return fetchApi(`/api/apply/${jobId}/form`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+}
+
+export async function submitDirectApply(jobId, formData) {
+  const token = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data?.session?.access_token || '';
+  const url = `${API_URL}/api/apply/${jobId}/submit`;
+  const maxRetries = 3;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    // Handle 429 rate limit
+    if (res.status === 429 && attempt < maxRetries) {
+      const retryAfter = res.headers.get('Retry-After');
+      const delay = retryAfter
+        ? (parseFloat(retryAfter) * 1000) + Math.random() * 1000
+        : Math.pow(2, attempt) * 1000 + Math.random() * 1500;
+      console.warn(`[Apply] 429 on submit, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      continue;
+    }
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+  }
+}
+
+export async function uploadResume(file) {
+  const token = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data?.session?.access_token || '';
+  const formData = new FormData();
+  formData.append('resume', file);
+  formData.append('is_default', 'true');
+  const url = `${API_URL}/api/apply/resume/upload`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+export async function getApplyHistory() {
+  const token = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data?.session?.access_token || '';
+  return fetchApi('/api/apply/history', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+}
+
+export async function getApplyProfile() {
+  const token = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data?.session?.access_token || '';
+  return fetchApi('/api/apply/profile', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+}
+
+export async function updateApplyProfile(data) {
+  const token = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data?.session?.access_token || '';
+  const formData = new FormData();
+  Object.entries(data).forEach(([k, v]) => { if (v) formData.append(k, v); });
+  const url = `${API_URL}/api/apply/profile/update`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
 }
 

@@ -7,12 +7,15 @@ import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
 import JobDetailsModal from './ApplyModal';
+import DirectApplyModal from './DirectApplyModal';
 
 export default function JobCard({ job, index, onViewDetails, onSave, savedJobs = [] }) {
   const { user } = useAuth();
   const isSaved = savedJobs.includes(job.id);
   const [saving, setSaving] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showDirectApply, setShowDirectApply] = useState(false);
+  const isDirectApply = (job?.direct_apply_ats || '').match(/greenhouse|lever/i);
 
   const handleSave = async (e) => {
     e.stopPropagation();
@@ -27,6 +30,7 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
 
   const handleApply = (e) => {
     e.stopPropagation();
+    if (isDirectApply) { setShowDirectApply(true); return; }
     if (job.apply_url) window.open(job.apply_url, '_blank', 'noopener,noreferrer');
   };
 
@@ -241,16 +245,14 @@ export default function JobCard({ job, index, onViewDetails, onSave, savedJobs =
             Details
           </button>
           <button className="btn btn-primary" onClick={handleApply}
-            style={{ padding: '5px 12px', fontSize: 12, borderRadius: 8 }}>
-            <ExternalLink size={12} /> Apply
+            style={{ padding: '5px 12px', fontSize: 12, borderRadius: 8, ...(isDirectApply ? { background: 'linear-gradient(135deg, #7c3aed, #06b6d4)' } : {}) }}>
+            {isDirectApply ? <>⚡ Quick Apply</> : <><ExternalLink size={12} /> Apply</>}
           </button>
         </div>
       </div>
 
-      {/* Job Details Modal Popup */}
-      {showDetailsModal && (
-        <JobDetailsModal job={job} onClose={() => setShowDetailsModal(false)} />
-      )}
+      {showDetailsModal && <JobDetailsModal job={job} onClose={() => setShowDetailsModal(false)} />}
+      {showDirectApply && <DirectApplyModal job={job} onClose={() => setShowDirectApply(false)} />}
     </motion.div>
   );
 }

@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = ""
     SAMBANOVA_API_KEY: str = ""
 
+    # Direct Apply — ATS Job Board API Keys
+    GREENHOUSE_JOB_BOARD_API_KEY: str = ""
+    LEVER_API_KEY: str = ""
+
     # Algolia (optional search index)
     ALGOLIA_APP_ID: str = ""
     ALGOLIA_API_KEY: str = ""

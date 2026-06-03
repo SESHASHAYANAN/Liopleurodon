@@ -2,13 +2,19 @@
 Liopleurodon — FastAPI Main Application
 Global job aggregation platform backend.
 """
+import sys
+import asyncio
+
+# Fix for Playwright NotImplementedError on Windows with FastAPI/Uvicorn
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from config import get_settings
-from routers import jobs, scrape, companies, users, alerts, ai
+from routers import jobs, scrape, companies, users, alerts, ai, apply
 
 
 scheduler = AsyncIOScheduler()
@@ -33,21 +39,21 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[Liopleurodon] Startup cleanup error (non-fatal): {e}")
 
-    # ─── API-based scrapers (every 1 hour) ─────────────────────
+    # ─── API-based scrapers (every 30 minutes) ─────────────────
     from services.scheduler import run_periodic_scrapes
     scheduler.add_job(
         run_periodic_scrapes,
         "interval",
-        hours=1,
+        minutes=30,
         id="scrape_all",
     )
 
-    # ─── India job scale-up (every 40 minutes → target 10,000+) ──
+    # ─── India job scale-up (every 30 minutes → target 10,000+) ──
     from scale_india_jobs import run_india_scale
     scheduler.add_job(
         run_india_scale,
         "interval",
-        minutes=40,
+        minutes=30,
         id="india_scale",
     )
 
@@ -71,7 +77,7 @@ async def lifespan(app: FastAPI):
     )
 
     scheduler.start()
-    print("[Liopleurodon] Backend started! API scrapers: 1h, India scale: 40min, Web scrapers: 10min, Expiry cleanup: 6h.")
+    print("[Liopleurodon] Backend started! API scrapers: 30min, India scale: 30min, Web scrapers: 10min, Expiry cleanup: 6h.")
     yield
     scheduler.shutdown()
     print("[Liopleurodon] Backend shutting down.")
@@ -101,6 +107,7 @@ app.include_router(companies.router)
 app.include_router(users.router)
 app.include_router(alerts.router)
 app.include_router(ai.router)
+app.include_router(apply.router)
 
 
 @app.get("/")
