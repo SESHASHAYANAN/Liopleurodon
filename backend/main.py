@@ -5,7 +5,7 @@ Global job aggregation platform backend.
 import sys
 import asyncio
 
-# Fix for Playwright NotImplementedError on Windows with FastAPI/Uvicorn
+# Fix for async compatibility on Windows with FastAPI/Uvicorn
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
