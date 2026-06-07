@@ -17,6 +17,7 @@ Scrapes, normalizes, and matches jobs from 10+ sources in real time, using free-
 </div>
 
 ---
+https://docs.google.com/document/d/1K-UdutdoeTzoOLuKIxrLRe-knEw6zi10krWmBTwqs8s/edit?usp=sharing
 
 ## 📌 1. Introduction & Market Context
 
