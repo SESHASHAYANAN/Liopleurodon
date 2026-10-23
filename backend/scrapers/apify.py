@@ -9,10 +9,28 @@ from scrapers.base import BaseScraper
 from config import get_settings
 
 
+def linkedin_job_rows(items: list) -> list[dict]:
+    """Keep job rows from the LinkedIn actor and add the keys the normalizers read.
+
+    The actor also writes result_type="error" rows (e.g. a search with no
+    results); only result_type="job" rows are kept.
+    """
+    rows = []
+    for item in items:
+        if not isinstance(item, dict) or item.get("result_type") != "job":
+            continue
+        row = dict(item)
+        row["url"] = item.get("jobUrl", "")
+        row["postedAt"] = item.get("postedDate")
+        row["easyApply"] = item.get("applyType") == "linkedin"
+        rows.append(row)
+    return rows
+
+
 class ApifyScraper(BaseScraper):
     BASE_URL = "https://api.apify.com/v2"
-    # Apify actor IDs for different sources
-    LINKEDIN_ACTOR = "anchor/linkedin-job-scraper"
+    # Apify actor IDs for different sources (the API path takes owner~name)
+    LINKEDIN_ACTOR = "johnvc~linkedin-jobs-api"
     INDEED_ACTOR = "misceres/indeed-scraper"
 
     async def scrape(self, query="software engineer", location="", page=1, num_results=20) -> list[dict]:
@@ -25,10 +43,10 @@ class ApifyScraper(BaseScraper):
             # Run LinkedIn scraper
             linkedin_jobs = await self._run_actor(
                 self.LINKEDIN_ACTOR,
-                {"searchQueries": [query], "location": location or "United States", "maxResults": num_results},
+                {"keyword": query, "location": location or "United States", "maxJobs": num_results},
                 settings.APIFY_TOKEN,
             )
-            results.extend(linkedin_jobs)
+            results.extend(linkedin_job_rows(linkedin_jobs))
         except Exception as e:
             print(f"Apify LinkedIn error: {e}")
 
